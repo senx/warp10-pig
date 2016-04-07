@@ -16,7 +16,7 @@ SET warp10.splits.endpoint 'https://warp.cityzendata.net/dist/api/v0/splits';
 SET warp10.fetch.timespan '$timespan';
 SET warp10.http.connect.timeout '2000';
 
-SET warp10.splits.token 'tEGGbhf0g33UlGVfdIbysOe_xOida7RuxwIIG9f8zGxKcNqLsUqgcKaczECcii2Gv5O.vOcU.uIl8uOryGgLmG1x9NYNt4LrwMPCt973Ghxwax2RqUa.lU_aD0Ag0nrbjC22KwalmHJ';
+SET warp10.splits.token '$token';
 SET warp10.splits.selector '$selector';
 SET warp10.fetch.now '$now';
 SET warp10.fetch.timespan '$timespan';
