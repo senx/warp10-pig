@@ -1,197 +1,226 @@
-apply plugin: 'java';
-apply plugin: 'eclipse';
-apply plugin: 'idea';
-apply plugin: 'maven';
-apply plugin: 'maven-publish';
-apply plugin: 'com.jfrog.bintray'
-
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
-
 //
-// Constants
+//   Copyright 2016  Cityzen Data
 //
-
-// List of dependencies for Warp10-pig
-ext.depsList = []
-
-// List of unique dependency names (index)
-ext.depsIndex = [] as Set
-
-// List of dependencies required by Warp10-pig
-ext.requiredLibs = [ 'warpscript', 'libthrift', 'bcprov-jdk16', 'boon', 'commons-io', 'commons-codec', 'commons-lang', 'commons-math3', 'compiler', 'core', 'curator-x-discovery', 'geoxplib', 'guava', \
-     'hadoop-common', 'hadoop-mapreduce-client-core', 'java-merge-sort', 'jetty-servlets', 'joda-time', 'jruby-complete', 'jtransforms', 'jts', 'junit', 'jython', 'kafka_2.9.2', \
-     'luaj-jse', 'oss-client', 'renjin-script-engine', 'sensision', 'slf4j-api' ]
-
-
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
 //
-// Configurations
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-
-configurations {
-  warp10Pig
-}
-
-idea {
-  module {
-    // add build/classes directory to excluded folders: index bytecode is not a really good idea ;)
-    excludeDirs += file('build')
-  }
-}
-
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
 //
-// Repositories for dependency resolution
-//
-
-repositories {
-  flatDir name:'ExternalJars', dirs:'./lib'
-  jcenter()
-  maven {
-    url 'https://repository.apache.org/content/groups/public'
-  }
-  mavenCentral()
-  maven {
-    url "http://maven.twttr.com"
-  }
-  // bedatadriven - http://www.renjin.org/#downloads
-  maven {
-    url "http://nexus.bedatadriven.com/content/groups/public/"
-  }
-  maven {
-    url "http://repo.opengeo.org/"
-  }
-  maven {
-    url 'https://dl.bintray.com/hbs/maven'
-  }
-  maven {
-    url 'https://dl.bintray.com/cityzendata/maven'
-  }
-  maven {
-    url "http://127.0.0.1:40080/m2"
-  }
-}
-
-
-
-//
-// Project source sets
-// MUST appear before 'dependencies' so all source sets are known
-//
-
-sourceSets {
-  main {
-    java {
-      srcDirs 'src/main/java'
-    }
-    resources {
-      srcDir 'src/main/resources'
-    }
-  }
-}
 
 buildscript {
   repositories {
+    jcenter()
+  }
+}
+plugins {
+  id "com.jfrog.bintray" version "1.4"
+}
+
+allprojects {
+  //
+  // Constants
+  //
+
+  // List of dependencies for Warp10-pig
+  ext.depsList = []
+
+  // List of unique dependency names (index)
+  ext.depsIndex = [] as Set
+
+  // List of dependencies required by Warp10-pig
+  ext.requiredLibs = [ 'warpscript', 'libthrift', 'bcprov-jdk16', 'boon', 'commons-io', 'commons-codec', 'commons-lang', 'commons-math3', 'compiler', 'core', 'curator-x-discovery', 'geoxplib', 'guava', \
+       'hadoop-common', 'hadoop-mapreduce-client-core', 'java-merge-sort', 'jetty-servlets', 'joda-time', 'jruby-complete', 'jtransforms', 'jts', 'junit', 'jython', 'kafka_2.9.2', \
+       'luaj-jse', 'oss-client', 'renjin-script-engine', 'sensision', 'slf4j-api' ]
+
+}
+
+
+subprojects {
+  apply plugin: 'java';
+  apply plugin: 'eclipse';
+  apply plugin: 'idea';
+  apply plugin: 'maven';
+  apply plugin: 'maven-publish';
+  apply plugin: 'com.jfrog.bintray'
+
+  group = 'io.warp10'
+
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+
+  //map key = archive base name : value a artifact version
+  ext {
+    stagingUser = project.hasProperty('stagingUser') ? project.property('stagingUser') : System.getenv('STAGEING_USER')
+    stagingURL = project.hasProperty('stagingURL') ? project.property('stagingURL') : System.getenv('STAGEING_URL')
+
+    if (null == stagingUser || null == stagingURL) {
+      stagingUser = ''
+      stagingURL = ''
+    }
+
+    gradle.taskGraph.whenReady { graph ->
+      println "building warp10-pig version=$version"
+      if (graph.hasTask(uploadArchives) || graph.hasTask(bintrayUpload)) {
+        if (!isGitRepoSynced()) {
+          throw new GradleException("Cannot upload archive: local repo contains uncommited files (git status -u no --porcelain)")
+        }
+      }
+
+    }
+  }
+
+  //
+  // Configurations
+  //
+  configurations {
+    warp10Pig
+  }
+
+  // GLOBAL DEPENDENCIES
+  dependencies {
+    //UPLOAD ARTIFACTS THROUGH SSH
+    warp10Pig 'org.apache.maven.wagon:wagon-ssh-external:2.8'
+  }
+
+
+  // COMPILE OPTIONS
+  compileJava {
+    if (null != System.getProperty("nojvmDebug")) {
+      options.compilerArgs << '-g:none'
+    } else {
+      options.compilerArgs << '-g'
+    }
+
+    //options.debug = false;
+    //options.optimize = false;
+    //options.debugOptions.debugLevel = ''
+  }
+
+  //
+  // IDE CONFIGURATIONS
+  //
+  // IDEA DEFAULT CONFIGURATION
+  idea {
+    module {
+      inheritOutputDirs = true
+    }
+  }
+  // ECLIPSE
+  eclipse {
+    classpath {
+      //customizing the classes output directory:
+      defaultOutputDir = file('build-eclipse')
+
+      //default settings for downloading sources and Javadoc:
+      downloadSources = true
+      downloadJavadoc = false
+    }
+  }
+
+  //
+  // Custom tasks
+  // MUST appear before task dependencies can be defined
+  //
+
+  task(groovysh, dependsOn: 'compileJava', type: JavaExec) {
+    main = 'org.codehaus.groovy.tools.shell.Main'
+    classpath = sourceSets.main.runtimeClasspath
+    args '-q'
+  }
+
+  //
+  // Repositories for dependency resolution
+  //
+
+  repositories {
     flatDir name:'ExternalJars', dirs:'./lib'
-    mavenCentral()
     jcenter()
     maven {
+      url 'https://repository.apache.org/content/groups/public'
+    }
+    mavenCentral()
+    maven {
       url "http://maven.twttr.com"
+    }
+    // bedatadriven - http://www.renjin.org/#downloads
+    maven {
+      url "http://nexus.bedatadriven.com/content/groups/public/"
+    }
+    maven {
+      url "http://repo.opengeo.org/"
+    }
+    maven {
+      url 'https://dl.bintray.com/hbs/maven'
+    }
+    maven {
+      url 'https://dl.bintray.com/cityzendata/maven'
     }
     maven {
       url "http://127.0.0.1:40080/m2"
     }
   }
 
-  dependencies {
-    classpath files('./build/classes/main')
-    classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '4.9'
-    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
+  // DEPLOY ON MAVEN REPO WITH SCP
+  uploadArchives {
+    repositories {
+      repositories.mavenDeployer {
+        configuration = configurations.deployerJars
+        uniqueVersion = false
+
+        repository(url: "scpexe://${stagingURL}") {
+          authentication(userName: "${stagingUser}")
+        }
+      }
+    }
+  }
+
+  // DEPLOY ON BINTRAY
+  bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+
+    dryRun = false
+
+    publications = [ 'warp10Pig' ]
+
+    pkg {
+      repo = 'maven'
+      name = 'warp10Pig'
+      licenses = ['Apache-2.0']
+      vcsUrl = 'https://github.com/cityzendata/warp10-pig.git'
+      version {
+        released  = new Date()
+      }
+    }
   }
 }
 
-//
-// Custom tasks
-// MUST appear before task dependencies can be defined
-//
-
-//
-// Custom tasks
-// MUST appear before task dependencies can be defined
-//
-
-task(groovysh, dependsOn: 'compileJava', type: JavaExec) {
-  main = 'org.codehaus.groovy.tools.shell.Main'
-  classpath = sourceSets.main.runtimeClasspath
-  args '-q'
-}
-
-//
-// Project dependencies
-//
-
-dependencies {
-  testCompile group: 'junit', name: 'junit', version: '4.12'
-
-  //
-  // Compile task dependency
-  //
-
-  compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.7-9-gf13fe19'
-
-  //
-  // Geo
-  //
-  compile group: 'com.geoxp', name: 'geoxplib', version: '1.0.0-rc1'
-
-  //
-  // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
-  //
-  compile group: 'org.apache.hadoop', name: 'hadoop-client', version: '2.6.0'
-
-  testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-core', version: '4.6'
-  testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-hadoop-compat', version: '4.6'
-  testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-pig', version: '4.6'
-
-  //UPLOAD ARTIFACTS THROUGH SSH
-  warp10Pig 'org.apache.maven.wagon:wagon-ssh-external:2.8'
-
-}
-
-//
-// Eclipse classpath sanitization
-//
-
-eclipse.classpath.file {
-  beforeMerged { classpath ->
-    classpath.entries.removeAll { entry -> if (entry.kind == 'var') return false; if (entry.kind == 'lib' && entry.path.toString().contains('javax.servlet/servlet-api')) return true; return false; }
-  }
-}
-
-// COMPILE OPTIONS
-compileJava {
-  if (null != System.getProperty("nojvmDebug")) {
-    options.compilerArgs << '-g:none'
-  } else {
-    options.compilerArgs << '-g'
-  }
-
-  //options.debug = false;
-  //options.optimize = false;
-  //options.debugOptions.debugLevel = ''
-}
-
-
+// ------------------------------------------------------------------
+//                    AUTO RELEASE MANAGEMENT
 // Gets the version name from the latest Git tag
 // if no commit occurs -> the name of the tag likes 0.0.1
 // if commit occurs -> 0.0.1-12-aabb1122 (number of commits + version number)
-def getVersionName = { ->
-  def stdout = new ByteArrayOutputStream()
-  //exec {
-  //  commandLine 'git', 'describe', '--tags'
-  //  standardOutput = stdout
-  //}
-  return stdout.toString().trim()
+// ------------------------------------------------------------------
+def getVersionName(String revision) {
+  String newRevision = revision
+
+  if (!revision.endsWith('SNAPSHOT')) {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+      commandLine 'git', 'describe', '--tags', '--always'
+      standardOutput = stdout
+    }
+    newRevision = stdout.toString().trim()
+  }
+  return newRevision
 }
 
 //
@@ -205,25 +234,33 @@ def isGitRepoSynced() {
   }
 
   //
-  // Exclude gradle.properties
+  // Exclude Revision.java & gradle.properties
   //
   String val = stdout.toString().replaceAll(/.*\/Revision.java\n/, '')
+  val = val.replaceAll(/.*\/gradle.properties\n/, '')
 
   return (0 == val.trim().size())
 }
 
-version = getVersionName()
-archivesBaseName = 'warp10-pig'
-group = 'io.warp10'
+//
+// Generate custom pom for Warp10=pig with the minimal dependencies
+//
+def genPom(Object pom) {
+  pom.withXml {
+    // compute the list of dependencies
+    project(":warp10Pig").configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
+      directDep ->
+        addChildsToDeps(directDep)
+    }
 
-gradle.taskGraph.whenReady { graph ->
-  println "building warp10-pig version=$version"
-  if (graph.hasTask(uploadArchives) || graph.hasTask(bintrayUpload)) {
-    if (!isGitRepoSynced()) {
-      throw new GradleException("Cannot upload archive: local repo contains uncommited files (git status -u no --porcelain)")
+    def dependenciesNode = asNode().appendNode('dependencies')
+    depsList.each {
+      def dependencyNode = dependenciesNode.appendNode('dependency')
+      dependencyNode.appendNode('groupId', it.getModuleGroup())
+      dependencyNode.appendNode('artifactId', it.getModuleName())
+      dependencyNode.appendNode('version', it.getModuleVersion())
     }
   }
-
 }
 
 //
@@ -243,127 +280,166 @@ def addChildsToDeps (def pResolvedDependency) {
   }
 }
 
-//
-// Generate custom pom with the minimal dependencies
-//
-def genPom(Object pom) {
-  pom.withXml {
-    // compute the list of dependencies
-    configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
-      directDep ->
-        addChildsToDeps(directDep)
-    }
-
-    def dependenciesNode = asNode().appendNode('dependencies')
-    requiredLibs.each {
-      def dependencyNode = dependenciesNode.appendNode('dependency')
-      println "*****"  + it.getModuleGroup()
-      dependencyNode.appendNode('groupId', it.getModuleGroup())
-      dependencyNode.appendNode('artifactId', it.getModuleName())
-      dependencyNode.appendNode('version', it.getModuleVersion())
-    }
-  }
-}
-
-jar {
-  manifest {
-    attributes(
-      "Implementation-Title": "Warp10-Pig",
-      "Implementation-Version": version)
-  }
-}
-
 def boolean isDepRequired(String currentDep ) {
   return requiredLibs.any { currentDep.equalsIgnoreCase(it) }
 }
 
-task pack(type: Jar, dependsOn: jar) {
-  zip64 = true
+// ------------------------------------------------------------------
+// ----------------------------- WARP 10 ----------------------------
+// ------------------------------------------------------------------
+project(':warp10Pig') {
+  archivesBaseName = 'warp10-pig'
+  group = 'io.warp10'
+  version = getVersionName('')
 
-  manifest {
-    attributes("Implementation-Title": "Warp10-Pig")
-    attributes("Implementation-Version": version)
-  }
+  //
+  // Project source sets
+  // MUST appear before 'dependencies' so all source sets are known
+  //
 
-  ext.listDeps = []
-
-  configurations.compile.resolvedConfiguration.resolvedArtifacts.each {
-    if (isDepRequired(it.moduleVersion.id.name)) {
-      listDeps << it.file
+  sourceSets {
+    main {
+      java {
+        srcDirs 'src/main/java'
+      }
+      resources {
+        srcDir 'src/main/resources'
+      }
     }
   }
 
-  from files(sourceSets.main.output.classesDir)
-  from {
-    listDeps.collect {
-      it.isDirectory() ? it : zipTree(it)
-    }
-  } {
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.RSA'
-    exclude 'about.html'
-    exclude 'about_files/**'
-    exclude 'plugin.properties'
-    exclude 'jetty-dir.css'
+  //
+  // Project dependencies
+  //
+
+  dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    //
+    // Compile task dependency
+    //
+
+    compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
+    compile group: 'io.warp10', name: 'warpscript', version: '1.0.7-9-gf13fe19'
+
+    //
+    // Geo
+    //
+    compile group: 'com.geoxp', name: 'geoxplib', version: '1.0.0-rc1'
+
+    //
+    // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
+    //
+    compile group: 'org.apache.hadoop', name: 'hadoop-client', version: '2.6.0'
+
+    testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-core', version: '4.6'
+    testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-hadoop-compat', version: '4.6'
+    testCompile group: 'com.twitter.elephantbird', name: 'elephant-bird-pig', version: '4.6'
+
+    //UPLOAD ARTIFACTS THROUGH SSH
+    warp10Pig 'org.apache.maven.wagon:wagon-ssh-external:2.8'
+
   }
-  with jar
-}
 
-//artifacts {
-//  archives file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
-//}
 
-// DEPLOY ON MAVEN REPO WITH SCP
-uploadArchives {
+  jar {
+    manifest {
+      attributes(
+          "Implementation-Title": "Warp10-Pig",
+          "Implementation-Version": version)
+    }
+  }
+
+
+  task pack(type: Jar, dependsOn: jar) {
+    zip64 = true
+
+    manifest {
+      attributes("Implementation-Title": "Warp10-Pig")
+      attributes("Implementation-Version": version)
+    }
+
+    ext.listDeps = []
+
+    configurations.compile.resolvedConfiguration.resolvedArtifacts.each {
+      if (isDepRequired(it.moduleVersion.id.name)) {
+        listDeps << it.file
+      }
+    }
+
+    from files(sourceSets.main.output.classesDir)
+    from {
+      listDeps.collect {
+        it.isDirectory() ? it : zipTree(it)
+      }
+    } {
+      exclude 'META-INF/*.DSA'
+      exclude 'META-INF/*.RSA'
+      exclude 'about.html'
+      exclude 'about_files/**'
+      exclude 'plugin.properties'
+      exclude 'jetty-dir.css'
+    }
+    with jar
+  }
+
+  //artifacts {
+  //  archives file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
+  //}
+
+  // DEPLOY ON MAVEN REPO WITH SCP
+  uploadArchives {
     repositories {
-        repositories.mavenDeployer {
-            configuration = configurations.warp10Pig
-            uniqueVersion = false
+      repositories.mavenDeployer {
+        configuration = configurations.warp10Pig
+        uniqueVersion = false
 
-            repository(url: "scpexe://${stagingURL}") {
-                authentication(userName: "${stagingUser}")
-            }
-            genPom(pom)
+        repository(url: "scpexe://${stagingURL}") {
+          authentication(userName: "${stagingUser}")
         }
-    }
-}
-
-publishing {
-  publications {
-    warp10Pig(MavenPublication) {
-      from components.java
-      groupId 'io.warp10'
-      artifactId archivesBaseName
-      version version
-      genPom(pom)
+        genPom(pom)
+      }
     }
   }
-}
 
-// DEPLOY ON BINTRAY
-bintray {
+  publishing {
+    publications {
+      warp10Pig(MavenPublication) {
+        from components.java
+        groupId 'io.warp10'
+        artifactId archivesBaseName
+        version version
+        genPom(pom)
+      }
+    }
+  }
+
+  // DEPLOY ON BINTRAY
+  bintray {
     dryRun = false
 
     user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
 
-    publications = [ 'warp10Pig' ]
+    publications = ['warp10Pig']
 
     pkg {
       repo = 'maven'
-      name = 'warp10-pig'
+      name = 'warp10Pig'
       licenses = ['Apache-2.0']
       vcsUrl = 'https://github.com/cityzendata/warp10-pig.git'
       version {
         name = version
-        released  = new Date()
+        released = new Date()
         vcsTag = version
       }
     }
-}
+  }
 
-//
-// Tasks dependencies
-//
-uploadArchives.dependsOn pack
-bintrayUpload.dependsOn pack
+  //
+  // Tasks dependencies
+  //
+  uploadArchives.dependsOn jar
+  bintrayUpload.dependsOn jar
+
+}
