@@ -8,14 +8,12 @@ import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
 import com.google.common.base.Charsets;
 import org.apache.pig.data.*;
-import org.apache.pig.impl.logicalLayer.schema.Schema;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class WarpScriptUtils {
@@ -40,7 +38,6 @@ public class WarpScriptUtils {
     //
 
     InputStream fis = WarpScriptUtils.class.getClassLoader().getResourceAsStream(warpscriptName);
-
     BufferedReader br = new BufferedReader(new InputStreamReader(fis, Charsets.UTF_8));
 
     StringBuffer scriptSB = new StringBuffer();
@@ -60,75 +57,36 @@ public class WarpScriptUtils {
   }
 
   /**
-   * Return a Tuple that represents a current stack level
-   *
-   * @param level
-   * @param obj
-   * @return Tuple - (level: int,element: Object)
-   *
-   */
-  public static Tuple stackLevelToPig(int level,Object obj) throws IOException {
-
-    //
-    // Cast object to Pig type
-    //
-
-    Object pigObj = WarpscriptToPig.cast(obj);
-
-    //
-    // The tuple that contains the current level of the stack
-    // (level,object)
-    //
-
-    Tuple tupleElt = TupleFactory.getInstance().newTuple(2);
-
-
-    //
-    // level
-    //
-
-    tupleElt.set(0, level);
-
-    //
-    // object
-    //
-
-    tupleElt.set(1, pigObj);
-
-    return tupleElt;
-
-  }
-
-  /**
-   * Return a Bag of tuples that represents the stack
+   * Return a Tuple that represents the stack
    *
    * @param stack (List)
-   * @return DataBag - stack: {(level: int,element: Object)}
+   * @return DataBag - stack: (obj1, obj2, ...)
    *
    */
-  public static DataBag stackToPig(List<Object> stack) throws IOException {
+  public static Tuple stackToPig(List<Object> stack) throws IOException {
+
+    Tuple stackAstuple = TupleFactory.getInstance().newTuple(stack.size());
 
     //
-    // Sorted Databag
+    // Take object in reverse order to really represents the Stack
     //
 
-    DataBag stackAsBag = new SortedDataBag(new StackElementComparator());
+    for (int level = 0; level < stack.size(); level++) {
+      //
+      // Cast object to Pig type
+      //
 
-    //
-    // Invert order to really represents the Stack
-    //
+      Object pigObj = WarpscriptToPig.cast(stack.get(level));
 
-    Collections.reverse(stack);
+      //
+      // level
+      //
 
-    int level = 0;
-    for (Object obj: stack) {
-      stackAsBag.add(stackLevelToPig(level,obj));
-//    System.out.println("level: " + level);
-//    System.out.println("elt class: " + obj.getClass().getSimpleName());
-      level++;
+      stackAstuple.set(level, pigObj);
+
     }
 
-    return stackAsBag;
+    return stackAstuple;
 
   }
 
@@ -161,16 +119,6 @@ public class WarpScriptUtils {
 
     return gtsWrapper;
   }
-
-  /**
-   * Return the Pig schema that represents one level of the stack
-   * @return Schema (level: int,object: Object)
-   */
-  public static Schema stackLevelSchema() {
-    Schema.FieldSchema fieldSchema = new Schema.FieldSchema("stackLevel", DataType.TUPLE);
-    return new Schema(fieldSchema);
-  }
-
 
   /**
    * chunk a GTSWrapper instance

@@ -12,8 +12,6 @@ targetCompatibility = 1.7
 // Constants
 //
 
-ext.thriftOutputDir = new File('src/generated/thrift');
-
 // List of dependencies for Warp10-pig
 ext.depsList = []
 
@@ -38,23 +36,6 @@ idea {
   module {
     // add build/classes directory to excluded folders: index bytecode is not a really good idea ;)
     excludeDirs += file('build')
-  }
-}
-
-task generateThrift << {
-  // Delete the thrift dir if exists
-  if (thriftOutputDir.exists()) {
-    thriftOutputDir.deleteDir()
-  }
-  thriftOutputDir.mkdirs()
-
-  ext.thriftFiles = fileTree(dir: 'src/main/thrift').matching { include '**/*.thrift' }
-  thriftFiles.collect {
-    ext.file = relativePath(it)
-    exec {
-      executable = 'thrift'
-      args = ['--gen', 'java:hashcode,private-members', '-o', thriftOutputDir, ext.file]
-    }
   }
 }
 
@@ -100,7 +81,7 @@ repositories {
 sourceSets {
   main {
     java {
-      srcDirs 'src/main/java', thriftOutputDir.toString() + '/gen-java'
+      srcDirs 'src/main/java'
     }
     resources {
       srcDir 'src/main/resources'
@@ -156,13 +137,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.7-3-gb4c7a50'
-
-  //
-  // Thrift
-  //
-
-  compile group: 'org.apache.thrift', name: 'libthrift', version: '0.9.1'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.0.7-9-gf13fe19'
 
   //
   // Geo
@@ -321,6 +296,5 @@ bintray {
 //
 // Tasks dependencies
 //
-compileJava.dependsOn generateThrift;
 uploadArchives.dependsOn pack
 bintrayUpload.dependsOn pack

@@ -1,7 +1,8 @@
 package io.warp10.pig;
 
 import io.warp10.continuum.Configuration;
-import io.warp10.pig.utils.StackElementComparator;
+import io.warp10.pig.utils.PigToWarpscript;
+import io.warp10.pig.utils.StackElement;
 import io.warp10.script.WarpScriptExecutor;
 import io.warp10.script.WarpScriptStack;
 import io.warp10.crypto.SipHashInline;
@@ -19,7 +20,7 @@ import java.util.*;
 /**
  * UDF to run Warpscript onto an WarpscriptStack
  */
-public class WarpScriptRun extends EvalFunc<DataBag> {
+public class WarpScriptRun extends EvalFunc<Tuple> {
 
   // FIXME declare it as public in WarpScriptExecutor
   private static final String WARP10_CONFIG = "warp10.config";
@@ -83,12 +84,12 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
    * Warpscript file (XXX.mc2) should start with '@': '@file.mc2'
    * To use a macro we put a space before the '@': ' @macro'
    *
-   * @param input A tuple with 2 elements ('@mc2' or 'NOW..', { (level, element) })
+   * @param input A tuple with N elements ('@mc2' or 'NOW..', obj1, obj2, ...)
    * @return DataBag {(uuid,level,object)}
    * @throws java.io.IOException
    */
   @Override
-  public DataBag exec(Tuple input) throws IOException {
+  public Tuple exec(Tuple input) throws IOException {
 
     boolean hasProgress = null != this.getReporter();
 
@@ -96,7 +97,7 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
     // Bag that represents the stack after the Warpscript exec
     //
 
-    DataBag stackOut = null;
+    Tuple stackOut = null;
 
     //
     // The stack after this run
@@ -105,7 +106,7 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
     List<Object> stackResult = null;
 
     if (input.size() < 1) {
-      throw new IOException("Invalid input, expecting a tuple with at least one element ('@mc2 or 'Warpscript commands': chararray) and (optional) data: {(level: int, element: any)}");
+      throw new IOException("Invalid input, expecting a tuple with at least one element '@mc2 or 'Warpscript commands' and (optional) data: ('@mc2 or 'Warpscript commands': chararray, object: any, ...)");
     }
 
     //
@@ -117,33 +118,51 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
     try {
 
       //
-      // data (input) and the related sorted Bag
+      // data (input)
       //
 
       DataBag data = null;
-      DataBag sortedDataBag = null;
 
-      if (2 == input.size()) {
+      //
+      // List that represents the Warpscript stack (with sorted elements)
+      //
+
+      List<Object> stackInput = new ArrayList<>();
+
+      if (input.size() > 1) {
 
         //
-        // data must be into a Bag
+        // Push input data (Object) onto the stack
+        // We have to consider the level of each element (Tuple index)
+        // We push all of these data with 1 Mark at first (Then it's quite easy to create a list with WarpScript)
+        // Reverse list to be more compliant with a stack representation
         //
 
-        if (DataType.findType(input.get(1)) != DataType.BAG) {
-          throw new IOException("data must be a Bag: {(level: int, element: any)}");
+        for (int level=1; level<input.size(); level++) {
+          reporter.progress();
+          if (DataType.isAtomic(input.get(level))) {
+            stackInput.add(PigToWarpscript.atomicToWarpscript(input.get(level)));
+          } else {
+            Object elt = input.get(level);
+
+            //
+            // If type is Bag or Tuple: ignore first level
+            //
+
+            if (DataType.findType(elt) == DataType.BAG) {
+              Iterator<Tuple> iter = ((DataBag) elt).iterator();
+              while (iter.hasNext()) {
+                Tuple tuple = iter.next();
+                stackInput.add(PigToWarpscript.complexToWarpscript(tuple));
+              }
+
+            } else if (DataType.findType(elt) == DataType.TUPLE) {
+              stackInput.add(PigToWarpscript.complexToWarpscript(input.get(level)));
+            }
+          }
         }
 
-        data = (DataBag) input.get(1);
-
-        if (data.isSorted()) {
-          //
-          // Bag is already sorted
-          //
-          sortedDataBag = data;
-        } else {
-          sortedDataBag = new SortedDataBag(new StackElementComparator());
-          sortedDataBag.addAll(data);
-        }
+        stackInput.add(new WarpScriptStack.Mark());
 
       }
 
@@ -181,38 +200,10 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
 
       }
 
-      //
-      // Push input data (Object) onto the stack
-      // We have to consider the level of each element (Sort)
-      // We push all of these data with 1 Mark at first (Then it's quite easy to create a list with WarpScript)
-      //
-
-      //
-      // List with data we will push onto the stack
-      //
-      List<Object> stackInput = new ArrayList<>();
-      if (null != sortedDataBag) {
-        stackInput.add(new WarpScriptStack.Mark());
-        Iterator<Tuple> iter = sortedDataBag.iterator();
-        while (iter.hasNext()) {
-          Tuple tuple = iter.next();
-          //
-          // We can ignore level
-          //
-          Object currentElement = tuple.get(1);
-//          System.out.println("type: " + currentElement.getClass().getSimpleName());
-          if (DataType.BYTEARRAY == DataType.findType(currentElement)) {
-            stackInput.add(((DataByteArray) currentElement).get());
-          } else {
-            stackInput.add(currentElement);
-          }
-        }
-      }
-
       stackResult = executor.exec(stackInput);
 
       //
-      // Dump stack to Bag
+      // Dump stack to Tuple
       //
 
       stackOut = WarpScriptUtils.stackToPig(stackResult);
@@ -232,15 +223,10 @@ public class WarpScriptRun extends EvalFunc<DataBag> {
 
   }
 
-  /**
-   *
-   * @param input
-   * @return Schema - stack: {(level: int,element: Object)}
-   */
   @Override
   public Schema outputSchema(Schema input) {
-    Schema.FieldSchema outputBag = new Schema.FieldSchema("stack", DataType.BAG);
-    return new Schema(outputBag);
+    Schema.FieldSchema fieldSchema = new Schema.FieldSchema("stack", DataType.TUPLE);
+    return new Schema(fieldSchema);
   }
 
 }

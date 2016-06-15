@@ -1,6 +1,0 @@
-//'label0' '42' 'label1' 'foo' 4 ->MAP
-//RELABEL
-//VALUES SIZE
-UNWRAP
-TICKS SIZE
-//[ SWAP bucketizer.mean 0 0 100 ] BUCKETIZE

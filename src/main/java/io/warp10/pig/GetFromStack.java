@@ -3,6 +3,7 @@ package io.warp10.pig;
 import io.warp10.pig.utils.WarpScriptUtils;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 
@@ -22,7 +23,8 @@ public class GetFromStack extends EvalFunc<Tuple> {
    * @return Object at this position in the stack
    * @throws IOException
    */
-  @Override public Tuple exec(Tuple input) throws IOException {
+  @Override
+  public Tuple exec(Tuple input) throws IOException {
 
     if (2 != input.size()) {
       throw new IOException(
@@ -73,7 +75,7 @@ public class GetFromStack extends EvalFunc<Tuple> {
 
   @Override
   public Schema outputSchema(Schema input) {
-    return WarpScriptUtils.stackLevelSchema();
+    return null;
   }
 
 }

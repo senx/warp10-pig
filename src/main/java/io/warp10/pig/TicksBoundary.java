@@ -7,7 +7,6 @@ import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
 import io.warp10.pig.utils.GTSWrapperPigHelper;
 import org.apache.pig.EvalFunc;
-import org.apache.pig.ResourceSchema;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;

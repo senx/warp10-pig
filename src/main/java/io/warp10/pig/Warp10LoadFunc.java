@@ -2,7 +2,6 @@ package io.warp10.pig;
 
 import io.warp10.hadoop.Warp10InputFormat;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;

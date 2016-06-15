@@ -17,10 +17,10 @@ public class StackElement implements Comparable<StackElement> {
 
   private int level = Integer.MAX_VALUE;
 
-  private Object element = null;
+  private Object object = null;
 
   //
-  // Hash computed onto the current element
+  // Hash computed onto the current object
   //
 
   private long elementId = Long.MAX_VALUE;
@@ -32,10 +32,10 @@ public class StackElement implements Comparable<StackElement> {
   protected static long[] SIPKEY_OBJECT =  new long[] {0x2C1878AF43ED268CL, 0x12D4C8A1E526B8D8L};
 
 
-  public StackElement(int level, Object element) throws IOException {
+  public StackElement(int level, Object object) throws IOException {
 
-    if(!(element instanceof Serializable)) {
-      throw new IOException("element must implement Serializable");
+    if(!(object instanceof Serializable)) {
+      throw new IOException("object must implement Serializable");
     }
 
     if (level < 0) {
@@ -43,19 +43,19 @@ public class StackElement implements Comparable<StackElement> {
     }
 
     this.level = level;
-    this.element = element;
+    this.object = object;
 
     byte[] rawElement = null;
-    if (element instanceof String) {
-      rawElement = ((String)element).getBytes(Charsets.UTF_8);
-    } else if (element instanceof GTSWrapper) {
-      rawElement = ((GTSWrapper) element).getEncoded();
-    } else if (element instanceof byte[]) {
-      rawElement = (byte[])element;
+    if (object instanceof String) {
+      rawElement = ((String) object).getBytes(Charsets.UTF_8);
+    } else if (object instanceof GTSWrapper) {
+      rawElement = ((GTSWrapper) object).getEncoded();
+    } else if (object instanceof byte[]) {
+      rawElement = (byte[]) object;
     } else {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream();
       ObjectOutputStream oos = new ObjectOutputStream(bos);
-      oos.writeObject(element);
+      oos.writeObject(object);
       oos.flush();
       oos.close();
       bos.close();
@@ -76,7 +76,7 @@ public class StackElement implements Comparable<StackElement> {
     return level;
   }
 
-  public Object getElement() { return element; }
+  public Object getObject() { return object; }
 
   public long getElementId() {
     return elementId;
