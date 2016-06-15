@@ -308,12 +308,6 @@ task pack(type: Jar, dependsOn: jar) {
   with jar
 }
 
-model {
-  tasks.generatePomFileForPublication {
-    destination = file("$buildDir/generated-pom.xml")
-  }
-}
-
 //artifacts {
 //  warp10Pig file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
 //}
