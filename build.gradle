@@ -194,15 +194,25 @@ def getVersionName = { ->
   return stdout.toString().trim()
 }
 
-ext.versionName = getVersionName()
-ext.archivesBaseName = 'warp10-pig'
-ext.group = 'io.warp10'
+version = getVersionName()
+archivesBaseName = 'warp10-pig'
+group = 'io.warp10'
+
+gradle.taskGraph.whenReady { graph ->
+  println "building warp10-pig version=$version"
+  if (graph.hasTask(uploadArchives) || graph.hasTask(bintrayUpload)) {
+    if (!isGitRepoSynced()) {
+      throw new GradleException("Cannot upload archive: local repo contains uncommited files (git status -u no --porcelain)")
+    }
+  }
+
+}
 
 jar {
   manifest {
     attributes(
       "Implementation-Title": "Warp10-Pig",
-      "Implementation-Version": versionName)
+      "Implementation-Version": version)
   }
 }
 
@@ -215,7 +225,7 @@ task pack(type: Jar, dependsOn: jar) {
 
   manifest {
     attributes("Implementation-Title": "Warp10-Pig")
-    attributes("Implementation-Version": versionName)
+    attributes("Implementation-Version": version)
   }
 
   ext.listDeps = []
@@ -263,20 +273,20 @@ uploadArchives {
 publishing {
   publications {
     warp10Pig(MavenPublication) {
-      from components.java
+      artifact file("${buildDir}/libs/warp10-pig-" + version + ".jar")
       groupId 'io.warp10'
       artifactId archivesBaseName
-      version versionName
+      version version
     }
   }
 }
 
 // DEPLOY ON BINTRAY
 bintray {
+    dryRun = false
+
     user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-
-    dryRun = false
 
     publications = [ 'warp10Pig' ]
 
@@ -286,9 +296,9 @@ bintray {
       licenses = ['Apache-2.0']
       vcsUrl = 'https://github.com/cityzendata/warp10-pig.git'
       version {
-        name = getVersionName()
+        name = version
         released  = new Date()
-        vcsTag = getVersionName()
+        vcsTag = version
       }
     }
 }
