@@ -271,7 +271,7 @@ task pack(type: Jar, dependsOn: jar) {
 }
 
 artifacts {
-  archives file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
+  warp10Pig file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
 }
 
 // DEPLOY ON MAVEN REPO WITH SCP
