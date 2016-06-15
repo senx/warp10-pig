@@ -34,6 +34,8 @@ public class IsGTSEmpty extends EvalFunc<Boolean> {
       throw new IOException("Tuple with 1 field is required : (encoded)");
     }
 
+    reporter.progress();
+
     //
     // GTSWrapper instance
     //

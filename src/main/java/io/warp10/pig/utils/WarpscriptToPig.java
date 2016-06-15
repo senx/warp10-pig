@@ -4,6 +4,7 @@ import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 
+import io.warp10.script.WarpScriptStack;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -85,6 +86,14 @@ public class WarpscriptToPig {
       } else if (warpscriptObj instanceof GeoTimeSerie) {
 
         objCasted = geoTimeSerietoGTSWrapper((GeoTimeSerie)warpscriptObj);
+
+      } else if (warpscriptObj instanceof WarpScriptStack.Mark) {
+
+        objCasted = ((WarpScriptStack.Mark) warpscriptObj).toString();
+
+      } else if (warpscriptObj instanceof byte[]) {
+
+        objCasted = new DataByteArray((byte[]) warpscriptObj);
 
       }
     }

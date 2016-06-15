@@ -1,8 +1,9 @@
 package io.warp10.pig;
 
-import io.warp10.pig.utils.LeptonUtils;
+import io.warp10.pig.utils.WarpScriptUtils;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 
@@ -22,12 +23,15 @@ public class GetFromStack extends EvalFunc<Tuple> {
    * @return Object at this position in the stack
    * @throws IOException
    */
-  @Override public Tuple exec(Tuple input) throws IOException {
+  @Override
+  public Tuple exec(Tuple input) throws IOException {
 
     if (2 != input.size()) {
       throw new IOException(
           "Invalid input, expecting a tuple with the stack level and the current stack - (index, stack:{})");
     }
+
+    reporter.progress();
 
     //
     // Get the search index (first field)
@@ -47,12 +51,11 @@ public class GetFromStack extends EvalFunc<Tuple> {
 
       Tuple tuple = iter.next();
 
-      if (4 != tuple.size()) {
-        throw new IOException(
-            "Invalid input, expecting a tuple with the stack level and the current stack - (index, stack:{})");
+      if (2 != tuple.size()) {
+        throw new IOException("Invalid input, expecting a tuple with the stack level and the current stack - (index, stack:{})");
       }
 
-      int level = (int) tuple.get(2);
+      int level = (int) tuple.get(0);
 
       if (index == level) {
 
@@ -72,7 +75,7 @@ public class GetFromStack extends EvalFunc<Tuple> {
 
   @Override
   public Schema outputSchema(Schema input) {
-    return LeptonUtils.stackLevelSchema();
+    return null;
   }
 
 }

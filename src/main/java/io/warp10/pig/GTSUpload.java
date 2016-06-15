@@ -7,8 +7,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.GZIPOutputStream;
 
+import io.warp10.continuum.gts.GTSWrapperHelper;
 import org.apache.pig.EvalFunc;
-import org.apache.pig.backend.hadoop.executionengine.physicalLayer.PigProgressable;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
@@ -47,7 +47,9 @@ public class GTSUpload extends EvalFunc<Long> {
 
     DataByteArray serialized = null;
     String params = this.params;
-    
+
+    reporter.progress();
+
     if (1 == input.size()) {
       serialized = (DataByteArray) input.get(0);      
     } else if (2 == input.size()) {
@@ -119,19 +121,15 @@ public class GTSUpload extends EvalFunc<Long> {
 
       Metadata metadataChunk = new Metadata(gtsWrapper.getMetadata());
 
-      GTSDecoder decoder = new GTSDecoder(gtsWrapper.getBase(), gtsWrapper.bufferForEncoded());
+      GTSDecoder decoder = GTSWrapperHelper.fromGTSWrapperToGTSDecoder(gtsWrapper);
 
       StringBuilder metasb = new StringBuilder();
       GTSHelper.metadataToString(metasb, metadataChunk.getName(), metadataChunk.getLabels());
-
-      PigProgressable progressable = this.getReporter();
     
       boolean first = true;
       
       while(decoder.next()) {
-        if (null != progressable) {
-          progressable.progress();
-        }
+        reporter.progress();
         
         if (!first) {
           pw.print("=");

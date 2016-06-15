@@ -5,7 +5,7 @@ import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
 import io.warp10.crypto.DummyKeyStore;
 import io.warp10.crypto.KeyStore;
-import io.warp10.pig.utils.LeptonUtils;
+import io.warp10.pig.utils.WarpScriptUtils;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
@@ -68,7 +68,6 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
   //
   // Gen labelsId, classId
   //
-  // FIXME: add argument to update this value
   //
   private boolean genIds = false;
 
@@ -83,6 +82,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
   /**
    * GTSWrapperFromSF - In chunk mode : 4 arguments required
    * @param mode (light, normal, chunk)
+   * @param genIds (Gen labelsId, classId ?)
    * @param clipFrom (chunk mode)
    * @param clipTo (chunk mode)
    * @param chunkwidth (chunk mode)
@@ -91,15 +91,17 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
   public GTSWrapperFromSF(String... args) {
       this.mode = args[0];
 
+      this.genIds = Boolean.valueOf(args[1]).booleanValue();
+
     //
     // clipFrom, clipTo and chunkwidth used only in chunk mode
     //
 
     if ("chunk".equals(this.mode)) {
-      if ((null != args[1]) && (null != args[2]) && (null != args[3])) {
-        this.clipFrom = Long.valueOf(args[1]);
-        this.clipTo = Long.valueOf(args[2]);
-        this.chunkwidth = Long.valueOf(args[3]);
+      if ((null != args[2]) && (null != args[3]) && (null != args[4])) {
+        this.clipFrom = Long.valueOf(args[2]);
+        this.clipTo = Long.valueOf(args[3]);
+        this.chunkwidth = Long.valueOf(args[4]);
       } else {
         System.err.println("clipFrom, clipTo and chunkwidth are required in chunk mode");
       }
@@ -154,6 +156,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
       if (2 == input.size()) {
         DataByteArray gtsEncodedData = (DataByteArray) input.get(1);
         gtsWrapperPartial.setEncoded(gtsEncodedData.get());
+
       } else {
         System.err.println("2 parameters (key and value) are required");
         return null;
@@ -234,7 +237,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
       // chunk : we return a bag with chunks => { tuple(labels, gtsId, chunkId, encoded)}
       //
 
-      List<GTSWrapper> chunks = LeptonUtils
+      List<GTSWrapper> chunks = WarpScriptUtils
           .chunk(gtsWrapperPartial, clipFrom, clipTo, chunkwidth);
 
       //System.out.println("nb chunks : " + chunks.size());
@@ -246,10 +249,10 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
         //
 
         String chunkId = chunk.getMetadata().getLabels()
-            .get(LeptonUtils.chunkIdLabelName);
+            .get(WarpScriptUtils.chunkIdLabelName);
         Metadata metadataChunk = new Metadata(
             gtsWrapperPartial.getMetadata());
-        metadataChunk.putToLabels(LeptonUtils.chunkIdLabelName, chunkId);
+        metadataChunk.putToLabels(WarpScriptUtils.chunkIdLabelName, chunkId);
 
         chunk.setMetadata(metadataChunk);
 
@@ -286,13 +289,15 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
 
           resultTuple.set(3, labelsIdForJoin);
 
-          resultTuple.set(4, chunk.getMetadata().getLabels().get(LeptonUtils.chunkIdLabelName));
+          resultTuple.set(4, chunk.getMetadata().getLabels().get(
+              WarpScriptUtils.chunkIdLabelName));
 
           resultTuple.set(5, chunkData);
 
         } else {
 
-          resultTuple.set(2, chunk.getMetadata().getLabels().get(LeptonUtils.chunkIdLabelName));
+          resultTuple.set(2, chunk.getMetadata().getLabels().get(
+              WarpScriptUtils.chunkIdLabelName));
 
           resultTuple.set(3, chunkData);
 
@@ -362,7 +367,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
     }
 
     if ("chunk".equalsIgnoreCase(this.mode)) {
-      fields.add(new Schema.FieldSchema(LeptonUtils.chunkIdLabelName, DataType.CHARARRAY));
+      fields.add(new Schema.FieldSchema(WarpScriptUtils.chunkIdLabelName, DataType.CHARARRAY));
     }
 
     fields.add(new Schema.FieldSchema("encoded", DataType.BYTEARRAY));

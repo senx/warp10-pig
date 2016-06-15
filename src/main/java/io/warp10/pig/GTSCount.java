@@ -3,6 +3,7 @@ package io.warp10.pig;
 import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
+import org.apache.hadoop.util.Progressable;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
@@ -33,8 +34,10 @@ public class GTSCount extends EvalFunc<Long> {
   public Long exec(Tuple input) throws IOException {
 
     if (input.size() != 1) {
-      throw new IOException("Tuple with 1 field is required : (encoded)");
+      throw new IOException("Tuple with 1 field is required: (encoded)");
     }
+
+    reporter.progress();
 
     //
     // GTSWrapper instance

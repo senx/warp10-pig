@@ -4,6 +4,8 @@ import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import org.apache.pig.backend.executionengine.ExecException;
+import org.apache.pig.backend.hadoop.executionengine.physicalLayer.PigProgressable;
+import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
@@ -33,14 +35,7 @@ public class PigToWarpscript {
     byte pigDataType = DataType.findType(value);
 
     if (DataType.BYTEARRAY == pigDataType) {
-
-      GTSWrapper gtsWrapper = LeptonUtils
-          .encodedToGTSWrapper(((DataByteArray) value).get());
-
-      GeoTimeSerie gts = GTSWrapperHelper.fromGTSWrapperToGTS(gtsWrapper);
-
-      objectCasted = gts;
-
+      objectCasted = ((DataByteArray) value).get();
     }
 
     //
@@ -109,10 +104,7 @@ public class PigToWarpscript {
 
         if (DataType.BAG == pigDataType) {
 
-          //
-          // Iterate on Bag and provide tuples to avoid misunderstanding
-          //
-          throw new ExecException(DataType.findTypeName(value) + " : iterate on tuples");
+          throw new ExecException(DataType.findTypeName(value) + " : iterate on Bag");
 
         } else {
 
@@ -130,9 +122,8 @@ public class PigToWarpscript {
     Object objectCasted;
 
     //
-    // If one field (singleton) put the element onto the stack
-    // Otherwise create a list
-    // We suppose elements in the list or the singleton is an atomic type
+    // If one field and Tuple:
+    // Ignore the first level.
     //
 
     if (tuple.size() > 1) {
@@ -152,8 +143,13 @@ public class PigToWarpscript {
       // We have to iterate : if bytearray => cast to GeoTimeSerie
       // Important : Only atomic types have been accepted in tuple
       //
-      for (Object inputElement : inputElements) {
-        elementsCasted.add(atomicToWarpscript(inputElement));
+      for (int i = 0; i < tuple.size(); i++) {
+        Object currentObject = tuple.get(i);
+        if (DataType.isAtomic(currentObject)) {
+          elementsCasted.add(atomicToWarpscript(currentObject));
+        } else {
+          elementsCasted.add(complexToWarpscript(currentObject));
+        }
       }
 
       //
@@ -170,7 +166,11 @@ public class PigToWarpscript {
 
       Object singleElt = tuple.get(0);
 
-      objectCasted = atomicToWarpscript(singleElt);
+      if (DataType.isAtomic(singleElt)) {
+        objectCasted = atomicToWarpscript(singleElt);
+      } else {
+        objectCasted = complexToWarpscript(singleElt);
+      }
 
     }
 

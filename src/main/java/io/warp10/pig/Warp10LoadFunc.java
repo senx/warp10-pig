@@ -2,7 +2,6 @@ package io.warp10.pig;
 
 import io.warp10.hadoop.Warp10InputFormat;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -46,12 +45,8 @@ public class Warp10LoadFunc extends LoadFunc implements LoadMetadata {
 
       Tuple t = this.tfactory.newTuple(2);
 
-      //
-      // We can use 'getBytes' here because we know how the underlying reader works!
-      //
-
       t.set(0, key);
-      t.set(1, new DataByteArray(value.getBytes()));
+      t.set(1, new DataByteArray(value.copyBytes()));
 
       return t;
     } catch (InterruptedException ie) {
