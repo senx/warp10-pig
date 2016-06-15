@@ -237,9 +237,9 @@ def addChildsToDeps (def pResolvedDependency) {
 
   // Add the dependency and its children if it has not been seen before and if this dependency is required by Warp10-Pig
   def depName = pResolvedDependency.getModuleName()
-  if(!mc2DepsIndex.contains(depName) && isDepRequired(depName)) {
-    mc2DepsIndex << depName
-    mc2DepsList << pResolvedDependency
+  if(!depsIndex.contains(depName) && isDepRequired(depName)) {
+    depsIndex << depName
+    depsList << pResolvedDependency
   }
 }
 
