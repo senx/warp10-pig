@@ -172,7 +172,7 @@ subprojects {
   uploadArchives {
     repositories {
       repositories.mavenDeployer {
-        configuration = configurations.deployerJars
+        configuration = configurations.warp10Pig
         uniqueVersion = false
 
         repository(url: "scpexe://${stagingURL}") {
