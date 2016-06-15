@@ -188,7 +188,7 @@ public class GenReduceId extends EvalFunc<DataBag> {
     }
 
     //
-    // {(classIdForJoin,labelsIdForJoin,reduceId)+
+    // {(classIdForJoin,labelsIdForJoin,reduceId)}
     //
 
     return resultBag;

@@ -1,0 +1,9 @@
+]
+
+DUP
+
+UNWRAP
+
+LIST-> DROP
+
+TOSELECTOR

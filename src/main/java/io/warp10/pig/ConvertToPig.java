@@ -24,15 +24,15 @@ import com.geoxp.GeoXPLib;
  * {(ts, elev, value)} or {metadata: [], {(ts, elev, value)}}
  * {(ts, value)} or {metadata: [], {(ts, value)}}
  */
-public class ConvertToLepton extends EvalFunc<DataBag> {
+public class ConvertToPig extends EvalFunc<DataBag> {
   
   private final long threshold;
   
-  public ConvertToLepton() {
+  public ConvertToPig() {
     this.threshold = 10000000L;
   }
   
-  public ConvertToLepton(String... args) {
+  public ConvertToPig(String... args) {
     this.threshold = Long.parseLong(args[0]);
   }
   

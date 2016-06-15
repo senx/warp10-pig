@@ -139,6 +139,3 @@ DESCRIBE gtsFuse;
 gtsFuseTest = GROUP gtsFuse ALL;
 gtsFuseTest2 = FOREACH gtsFuseTest GENERATE COUNT(gtsFuse);
 DUMP gtsFuseTest2;
-
-
-

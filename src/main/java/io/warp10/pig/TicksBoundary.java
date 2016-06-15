@@ -5,8 +5,13 @@ import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
+import io.warp10.pig.utils.GTSWrapperPigHelper;
 import org.apache.pig.EvalFunc;
-import org.apache.pig.data.*;
+import org.apache.pig.ResourceSchema;
+import org.apache.pig.data.DataByteArray;
+import org.apache.pig.data.DataType;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
@@ -18,23 +23,21 @@ import java.util.List;
 
 /**
  * Returns a tuple with the first and the max timestamp
- * key : GTSWraper without ticks
- * value : GeoTimeSerie (with ticks)
  **/
-public class TicksBoundaryFromSF extends EvalFunc<Tuple> {
+public class TicksBoundary extends EvalFunc<Tuple> {
 
-  public TicksBoundaryFromSF() {  }
+  public TicksBoundary() {  }
 
   /**
-   * Input : 2 bytearray fields (k,v)
+   * Input : (GTSWrapper)
    *
    * @param input
    * @return
-   * @throws java.io.IOException
+   * @throws IOException
    */
   public Tuple exec(Tuple input) throws IOException {
-    if (null == input || input.size() != 2) {
-      System.err.println("2 parameters are required !");
+    if (null == input || input.size() != 1) {
+      System.err.println("1 parameter is required ! - GTSWrapper");
       return null;
     }
 
@@ -43,24 +46,21 @@ public class TicksBoundaryFromSF extends EvalFunc<Tuple> {
     DataByteArray gtsWrapperBytes = (DataByteArray) input.get(0);
     TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
 
-    GTSWrapper gtsWrapperPartial = new GTSWrapper();
+    GTSWrapper gtsWrapper = new GTSWrapper();
 
     try {
-      deserializer.deserialize(gtsWrapperPartial, (gtsWrapperBytes.get()));
+      deserializer.deserialize(gtsWrapper, (gtsWrapperBytes.get()));
     } catch (TException te) {
       throw new IOException(te);
     }
 
-    DataByteArray gtsEncodedData = (DataByteArray) input.get(1);
-    gtsWrapperPartial.setEncoded(gtsEncodedData.get());
-
-    if (null == gtsWrapperPartial.getMetadata()) {
-      gtsWrapperPartial.setMetadata(new Metadata());
+    if (null == gtsWrapper.getMetadata()) {
+      gtsWrapper.setMetadata(new Metadata());
     }
 
-    GeoTimeSerie gts = GTSWrapperHelper.fromGTSWrapperToGTS(gtsWrapperPartial);
+    GeoTimeSerie gts = GTSWrapperHelper.fromGTSWrapperToGTS(gtsWrapper);
 
-    Tuple tuple = TupleFactory.getInstance().newTuple(2);
+    Tuple tuple = TupleFactory.getInstance().newTuple(4);
 
     //
     // Sort timestamps in reverse order so we can produce all chunks in O(n)
@@ -68,15 +68,15 @@ public class TicksBoundaryFromSF extends EvalFunc<Tuple> {
 
     GTSHelper.sort(gts, true);
 
-    //
-    // If lastchunk is 0, use lastbucket or the most recent tick
-    //
-
     long firstTick = GTSHelper.firsttick(gts);
     long lastTick = GTSHelper.lasttick(gts);
 
-    tuple.set(0, firstTick);
-    tuple.set(1, lastTick);
+    List<Long> ids = GTSWrapperPigHelper.genIds(gtsWrapper);
+
+    tuple.set(0, ids.get(0));
+    tuple.set(1, ids.get(1));
+    tuple.set(2, firstTick);
+    tuple.set(3, lastTick);
 
     return tuple;
 
@@ -86,12 +86,14 @@ public class TicksBoundaryFromSF extends EvalFunc<Tuple> {
   public Schema outputSchema(Schema input) {
 
     List<Schema.FieldSchema> fields = new ArrayList<Schema.FieldSchema>();
+    fields.add(new Schema.FieldSchema("classId", DataType.LONG));
+    fields.add(new Schema.FieldSchema("labelsId", DataType.LONG));
     fields.add(new Schema.FieldSchema("firstTick", DataType.LONG));
     fields.add(new Schema.FieldSchema("lastTick", DataType.LONG));
 
     Schema tupleSchema = new Schema(fields);
 
-    Schema.FieldSchema outputTuple = new Schema.FieldSchema("gts", DataType.TUPLE);
+    Schema.FieldSchema outputTuple = new Schema.FieldSchema("ticks", DataType.TUPLE);
 
     outputTuple.schema = tupleSchema;
 

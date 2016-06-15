@@ -2,8 +2,9 @@
 -- Library of Lepton macros
 --
 
-DEFINE Fuse io.warp10.pig.UDFWrapper('Fuse');
-DEFINE GTSTips io.warp10.pig.UDFWrapper('GTSTips');
+DEFINE Fuse io.warp10.pig.Fuse();
+DEFINE GTSTips io.warp10.pig.GTSTips();
+DEFINE GetFromStackUdf io.warp10.pig.GetFromStack();
 
 /**
  * LeptonOverlap will transform the input Geo Time Series by
@@ -86,9 +87,9 @@ $OBJ = FOREACH FLAT2 GENERATE FLATTEN($0) AS obj;
 * @return (obj: XX)
 *
 */
-DEFINE GetObjectFromStack(INDEX, STACK) RETURNS OBJ {
+DEFINE GetFromStack(INDEX, STACK) RETURNS OBJ {
 
-STACKLEVEL = FOREACH $STACK GENERATE GetFromStack($INDEX, $0);
+STACKLEVEL = FOREACH $STACK GENERATE GetFromStackUdf($INDEX, $0);
 
 $OBJ = GetObjectFromStackLevel(STACKLEVEL);
 

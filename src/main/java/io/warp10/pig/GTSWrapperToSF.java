@@ -31,6 +31,8 @@ public class GTSWrapperToSF extends EvalFunc<Tuple> {
       throw new IOException("Invalid input, expecting a GTS instance.");
     }
 
+    reporter.progress();
+
     byte[] data = ((DataByteArray) input.get(0)).get();
 
     //

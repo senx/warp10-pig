@@ -13,9 +13,7 @@ DEFINE GetFromStack io.warp10.pig.UDFWrapper('GetFromStack');
 --DEFINE GTSUpload UDFWrapper('GTSUpload','-t Hz31vXtodGlKfsnsgSLygF8N0PDpL4e.uVzt_4O2J6yVHJLQNTuH9UkNQUFSYCAt2ICzdrSoVnOnat1XCGFnADVrMDbTjQTcwU_Qs96l3IN -u https://warp.cityzendata.net/dist/api/v0/update');
 DEFINE GTSUpload io.warp10.pig.UDFWrapper('GTSUpload','-t XXXX -u http://127.0.0.1:8881/dist/api/v0/update');
 
-
 DEFINE GTSWrapperLoad io.warp10.pig.UDFWrapper('GTSWrapperFromSF','normal');
-
 
 rawData = load '$input' using com.twitter.elephantbird.pig.load.SequenceFileLoader(
 '-c com.twitter.elephantbird.pig.util.BytesWritableConverter','-c com.twitter.elephantbird.pig.util.BytesWritableConverter')

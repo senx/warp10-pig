@@ -28,6 +28,8 @@ public class UUID extends EvalFunc<String> {
   @Override
   public String exec(Tuple input) throws IOException {
 
+    reporter.progress();
+
     //
     // No parameter is attempted
     //

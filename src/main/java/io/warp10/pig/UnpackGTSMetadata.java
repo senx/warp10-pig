@@ -28,6 +28,8 @@ public class UnpackGTSMetadata extends EvalFunc<Map<String, Object>> {
       throw new IOException("Invalid input, expecting a GTS instance.");
     }
 
+    reporter.progress();
+
     byte[] data = ((DataByteArray) input.get(0)).get();
 
     //

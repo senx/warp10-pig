@@ -2,11 +2,12 @@ package io.warp10.pig;
 
 import io.warp10.continuum.gts.GTSHelper;
 import io.warp10.continuum.gts.GTSWrapperHelper;
+import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
 import io.warp10.crypto.DummyKeyStore;
 import io.warp10.crypto.KeyStore;
-import io.warp10.pig.utils.LeptonUtils;
+import io.warp10.pig.utils.WarpScriptUtils;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
@@ -16,17 +17,13 @@ import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Use Warpscript to chunk GTS
  * @deprecated
  */
 public class Chunk extends EvalFunc<DataBag> {
-
 
   //
   // KeyStore
@@ -52,8 +49,6 @@ public class Chunk extends EvalFunc<DataBag> {
   //
   private static final String labelsIdForJoinName = "labelsIdForJoin";
 
-
-
   //
   // Chunk parameters
   //
@@ -61,7 +56,6 @@ public class Chunk extends EvalFunc<DataBag> {
   private long clipFrom = Long.MIN_VALUE;
   private long clipTo = Long.MIN_VALUE;
   private long chunkwidth = Long.MIN_VALUE;
-
 
   //
   // Mode (chunk or timeclip)
@@ -82,6 +76,8 @@ public class Chunk extends EvalFunc<DataBag> {
     if (args.length < 1) {
       throw new IOException("At least 1 parameter (mode) required: chunk mode: ('chunk', [clipFrom], [clipTo], [chunkwidth]) timeclip mode: ('timeclip', [clipFrom], [clipTo])");
     }
+
+    // FIXME: add keepme parameter to accept empty gts (default: false)
 
     if ("chunk".equalsIgnoreCase(args[0])) {
       if (4 == args.length) {
@@ -136,6 +132,9 @@ public class Chunk extends EvalFunc<DataBag> {
     DataBag resultBag = new DefaultDataBag();
 
     while (iter.hasNext()) {
+
+      reporter.progress();
+
       Tuple t = (Tuple) iter.next();
 
       DataByteArray encoded = (DataByteArray) t.get(0);
@@ -217,7 +216,8 @@ public class Chunk extends EvalFunc<DataBag> {
           if (chunkwidth == Long.MIN_VALUE) {
             chunkwidth = (Long)t.get(3);
           }
-          chunks = LeptonUtils.chunk(gtsWrapper, clipFrom, clipTo, chunkwidth);
+          chunks = WarpScriptUtils
+              .chunk(gtsWrapper, clipFrom, clipTo, chunkwidth);
         } else if (this.mode == MODE.TIMECLIP) {
           //
           // If conf has not been provided during init, get it here (dynamic mode) !
@@ -232,82 +232,91 @@ public class Chunk extends EvalFunc<DataBag> {
           // timeclip generates only one GTS
           //
           chunks = new ArrayList<>();
+
           chunks.add(GTSWrapperHelper.clip(gtsWrapper, clipFrom, clipTo));
         }
 
-        // System.out.println("nb chunks : " + chunks.size());
+        //System.out.println("nb chunks : " + chunks.size());
 
         for (GTSWrapper chunk : chunks) {
 
-          Tuple resultTuple = null;
-          if (this.mode == MODE.CHUNK) {
-            resultTuple = TupleFactory.getInstance().newTuple(7);
-          } else {
-            resultTuple = TupleFactory.getInstance().newTuple(6);
-          }
+          reporter.progress();
 
-          Metadata metadataChunk = new Metadata(
-              gtsWrapper.getMetadata());
+          //System.out.println("chunk size : " + chunk.getCount());
 
-          if (this.mode == MODE.CHUNK) {
+          if (chunk.getCount() > 0) {
+
+            Tuple resultTuple = null;
+            if (this.mode == MODE.CHUNK) {
+              resultTuple = TupleFactory.getInstance().newTuple(7);
+            } else {
+              resultTuple = TupleFactory.getInstance().newTuple(6);
+            }
+
+            Metadata metadataChunk = new Metadata(
+                gtsWrapper.getMetadata());
+
+            if (this.mode == MODE.CHUNK) {
+              //
+              // Get chunk id and put it in chunk Metadata
+              //
+
+              String chunkId = chunk.getMetadata().getLabels()
+                  .get(WarpScriptUtils.chunkIdLabelName);
+              metadataChunk
+                  .putToLabels(WarpScriptUtils.chunkIdLabelName, chunkId);
+            }
+
+            chunk.setMetadata(metadataChunk);
+
+            if (gtsWrapper.isSetKey()) {
+              chunk.setKey(gtsWrapper.getKey());
+            }
+
             //
-            // Get chunk id and put it in chunk Metadata
+            // Add the current chunk to bag - We have to serialize it
             //
 
-            String chunkId = chunk.getMetadata().getLabels()
-                .get(LeptonUtils.chunkIdLabelName);
-            metadataChunk.putToLabels(LeptonUtils.chunkIdLabelName, chunkId);
-          }
+            byte[] chunkEncoded = null;
+            try {
+              chunkEncoded = serializer.serialize(chunk);
+            } catch (TException te) {
+              throw new IOException(te);
+            }
 
-          chunk.setMetadata(metadataChunk);
+            DataByteArray chunkData = new DataByteArray(chunkEncoded);
 
-          if (gtsWrapper.isSetKey()) {
-            chunk.setKey(gtsWrapper.getKey());
-          }
+            //
+            // Set Labels - Can be used as equiv classes
+            //
 
-          //
-          // Add the current chunk to bag - We have to serialize it
-          //
+            resultTuple.set(0, className);
 
-          byte[] chunkEncoded = null;
-          try {
-            chunkEncoded = serializer.serialize(chunk);
-          } catch (TException te) {
-            throw new IOException(te);
-          }
+            resultTuple.set(1, chunk.getMetadata().getLabels());
 
-          DataByteArray chunkData = new DataByteArray(chunkEncoded);
+            resultTuple.set(2, gtsId);
 
-          //
-          // Set Labels - Can be used as equiv classes
-          //
+            resultTuple.set(3, classIdForJoin);
 
-          resultTuple.set(0, className);
+            resultTuple.set(4, labelsIdForJoin);
 
-          resultTuple.set(1, chunk.getMetadata().getLabels());
-
-          resultTuple.set(2, gtsId);
-
-          resultTuple.set(3, classIdForJoin);
-
-          resultTuple.set(4, labelsIdForJoin);
-
-          if (this.mode == MODE.CHUNK) {
-            resultTuple
-                .set(5, chunk.getMetadata().getLabels()
-                    .get(LeptonUtils.chunkIdLabelName));
+            if (this.mode == MODE.CHUNK) {
+              resultTuple
+                  .set(5, chunk.getMetadata().getLabels()
+                      .get(WarpScriptUtils.chunkIdLabelName));
               resultTuple.set(6, chunkData);
-          } else {
-            // TIMECLIP
-            resultTuple.set(5, chunkData);
-          }
+            } else {
+              // TIMECLIP
+              resultTuple.set(5, chunkData);
+            }
 
-          resultBag.add(resultTuple);
+            resultBag.add(resultTuple);
+          }
         }
 
-      } catch (TException te) {
-        throw new IOException(te);
-      }
+        } catch (TException te) {
+          throw new IOException(te);
+        }
     }
 
     return resultBag;
@@ -324,7 +333,7 @@ public class Chunk extends EvalFunc<DataBag> {
      fields.add(new Schema.FieldSchema(classIdForJoinName, DataType.LONG));
      fields.add(new Schema.FieldSchema(labelsIdForJoinName, DataType.LONG));
      if (this.mode == MODE.CHUNK) {
-       fields.add(new Schema.FieldSchema(LeptonUtils.chunkIdLabelName, DataType.CHARARRAY));
+       fields.add(new Schema.FieldSchema(WarpScriptUtils.chunkIdLabelName, DataType.CHARARRAY));
      }
      fields.add(new Schema.FieldSchema("encoded", DataType.BYTEARRAY));
 

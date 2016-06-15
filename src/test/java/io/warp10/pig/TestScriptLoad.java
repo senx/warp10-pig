@@ -16,7 +16,7 @@ public class TestScriptLoad {
 
     String scriptMc2 = "@/mnt/czd/workspace/lepton/src/test/pig/warpscript/test.mc2";
 
-    WarpscriptRun warpscriptRun = new WarpscriptRun();
+    WarpScriptRun warpscriptRun = new WarpScriptRun(null);
 
     Tuple tuple = TupleFactory.getInstance().newTuple(2);
 

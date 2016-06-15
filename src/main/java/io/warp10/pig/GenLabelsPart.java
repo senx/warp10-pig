@@ -41,6 +41,8 @@ public class GenLabelsPart extends EvalFunc<String> {
   @Override
   public String exec(Tuple input) throws IOException {
 
+    reporter.progress();
+
     StringBuffer filterValue = null;
 
     Map<String,String> labels = (Map)input.get(0);

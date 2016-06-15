@@ -46,12 +46,8 @@ public class Warp10LoadFunc extends LoadFunc implements LoadMetadata {
 
       Tuple t = this.tfactory.newTuple(2);
 
-      //
-      // We can use 'getBytes' here because we know how the underlying reader works!
-      //
-
       t.set(0, key);
-      t.set(1, new DataByteArray(value.getBytes()));
+      t.set(1, new DataByteArray(value.copyBytes()));
 
       return t;
     } catch (InterruptedException ie) {

@@ -34,7 +34,7 @@ public class PigToWarpscript {
 
     if (DataType.BYTEARRAY == pigDataType) {
 
-      GTSWrapper gtsWrapper = LeptonUtils
+      GTSWrapper gtsWrapper = WarpScriptUtils
           .encodedToGTSWrapper(((DataByteArray) value).get());
 
       GeoTimeSerie gts = GTSWrapperHelper.fromGTSWrapperToGTS(gtsWrapper);

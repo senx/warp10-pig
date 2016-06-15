@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import io.warp10.continuum.gts.GTSWrapperHelper;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataByteArray;
@@ -123,7 +124,7 @@ public class GTSTips extends EvalFunc<DataBag> {
       DataByteArray bytes = (DataByteArray) o;
       
       try {
-        deserializer.deserialize(wrapper, bytes.get());                
+        deserializer.deserialize(wrapper, bytes.get());
       } catch (TException te) {
         throw new IOException(te);
       }
@@ -136,7 +137,7 @@ public class GTSTips extends EvalFunc<DataBag> {
       ByteBuffer bb = wrapper.bufferForEncoded();
       int position = bb.position();
       
-      GTSDecoder decoder = new GTSDecoder(wrapper.getBase(), bb);
+      GTSDecoder decoder = GTSWrapperHelper.fromGTSWrapperToGTSDecoder(wrapper);
       
       boolean first = true;
       long lasttick = 0L;

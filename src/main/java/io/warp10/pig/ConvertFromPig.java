@@ -31,15 +31,15 @@ import io.warp10.continuum.store.thrift.data.GTSWrapper;
  * If the UDF is initialized with 'true' then null will be substituted for missing
  * lat/lon/elev so the output tuples will all contain 5 elements
  */
-public class ConvertFromLepton extends EvalFunc<DataBag> {
+public class ConvertFromPig extends EvalFunc<DataBag> {
   
   private final boolean nullify;
   
-  public ConvertFromLepton() {
+  public ConvertFromPig() {
     this.nullify = false;
   }
   
-  public ConvertFromLepton(String nullify) {
+  public ConvertFromPig(String nullify) {
     this.nullify = "true".equals(nullify);
   }
   

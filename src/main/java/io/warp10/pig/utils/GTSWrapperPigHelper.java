@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.warp10.continuum.gts.GTSHelper;
 import io.warp10.continuum.store.thrift.data.Metadata;
+import io.warp10.crypto.DummyKeyStore;
+import io.warp10.crypto.KeyStore;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.*;
 
@@ -23,7 +26,21 @@ import org.apache.thrift.protocol.TCompactProtocol;
  * [class#GTS1,lastbucket#0,base#0,labels#{label0=42}]
  */
 public class GTSWrapperPigHelper {
-  
+
+  //
+  // KeyStore
+  //
+
+  private static final KeyStore keyStore = new DummyKeyStore();
+
+  //
+  // 128 Key to compute classId and labelsId used to join GTS
+  //
+
+  // FIXME : must be set in a properties file !
+
+  private static final String classLabelsKey = "hex:4dd3de27c81561293d857784b98c6bbc";
+
   public static Map<String,Object> metadata2pig(GTSWrapper wrapper) {
     Map<String,Object> map = new HashMap<String, Object>();
     
@@ -136,6 +153,25 @@ public class GTSWrapperPigHelper {
     }
 
     return bag;
+  }
+
+  /**
+   * Return a List (classId, labelsId) against one GTSWrapper
+   * @param gtsWrapper
+   * @return List<Long>: (classId, labelsId>)
+   */
+  public static List<Long> genIds(GTSWrapper gtsWrapper) {
+    String className = gtsWrapper.getMetadata().getName();
+    Map labels = gtsWrapper.getMetadata().getLabels();
+
+    Long classIdForJoin = GTSHelper.classId(keyStore.decodeKey(classLabelsKey), className);
+    Long labelsIdForJoin = GTSHelper.labelsId(keyStore.decodeKey(classLabelsKey), labels);
+
+    List<Long> ids = new ArrayList<Long>();
+    ids.add(0, classIdForJoin);
+    ids.add(1, labelsIdForJoin);
+
+    return ids;
   }
 
   /**

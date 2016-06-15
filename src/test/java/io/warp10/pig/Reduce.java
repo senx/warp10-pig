@@ -7,7 +7,7 @@ import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.continuum.store.thrift.data.Metadata;
-import io.warp10.pig.utils.LeptonUtils;
+import io.warp10.pig.utils.WarpScriptUtils;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
@@ -158,7 +158,7 @@ public class Reduce extends EvalFunc<DataBag> {
       // Execute the Warpscript onto the stack
       //
 
-      WarpScriptStack.Macro macro = LeptonUtils.parseScript(stack, this.warpscript);
+      WarpScriptStack.Macro macro = WarpScriptUtils.parseScript(stack, this.warpscript);
 
       stack.exec(macro);
 

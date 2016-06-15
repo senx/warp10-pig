@@ -1,8 +1,6 @@
-//
-// test : value = value + 2
-//
-'label0' '42' 'label1' 'foo' 4 ->MAP
-RELABEL
-2.0 mapper.add
-0 0 0
-5 ->LIST MAP
+//'label0' '42' 'label1' 'foo' 4 ->MAP
+//RELABEL
+//VALUES SIZE
+UNWRAP
+TICKS SIZE
+//[ SWAP bucketizer.mean 0 0 100 ] BUCKETIZE

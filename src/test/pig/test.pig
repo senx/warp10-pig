@@ -33,7 +33,6 @@ DEFINE GTSDump io.warp10.pig.UDFWrapper('GTSDump');
 --
 data = LOAD '$input' USING PigStorage(',') AS (ts:long,lat:double,lon:double,value:double);
 
-
 DESCRIBE data;
 
 --
@@ -41,7 +40,6 @@ DESCRIBE data;
 --
 dataGroup = GROUP data ALL;
 DESCRIBE dataGroup;
-
 
 --
 -- Convert these TimeSeries data from Pig to GTS (import)
@@ -56,8 +54,6 @@ DESCRIBE dataGroup;
 -- CSV mode
 --
 gtsWrappers = FOREACH dataGroup GENERATE ConvertToLepton(data);
-
-
 
 DESCRIBE gtsWrappers;
 
