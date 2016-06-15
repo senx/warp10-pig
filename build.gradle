@@ -226,6 +226,44 @@ gradle.taskGraph.whenReady { graph ->
 
 }
 
+//
+// Add the root dependency and all its children (transitive dependencies) to the list
+//
+def addChildsToDeps (def pResolvedDependency) {
+
+  pResolvedDependency.children.each {
+    addChildsToDeps(it)
+  }
+
+  // Add the dependency and its children if it has not been seen before and if this dependency is required by Warp10-Pig
+  def depName = pResolvedDependency.getModuleName()
+  if(!mc2DepsIndex.contains(depName) && isDepRequired(depName)) {
+    mc2DepsIndex << depName
+    mc2DepsList << pResolvedDependency
+  }
+}
+
+//
+// Generate custom pom with the minimal dependencies
+//
+def genPom(Object pom) {
+  pom.withXml {
+    // compute the list of dependencies
+    configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
+      directDep ->
+        addChildsToDeps(directDep)
+    }
+
+    def dependenciesNode = asNode().appendNode('dependencies')
+    requiredLibs.each {
+      def dependencyNode = dependenciesNode.appendNode('dependency')
+      dependencyNode.appendNode('groupId', it.getModuleGroup())
+      dependencyNode.appendNode('artifactId', it.getModuleName())
+      dependencyNode.appendNode('version', it.getModuleVersion())
+    }
+  }
+}
+
 jar {
   manifest {
     attributes(
@@ -270,9 +308,15 @@ task pack(type: Jar, dependsOn: jar) {
   with jar
 }
 
-artifacts {
-  warp10Pig file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
+model {
+  tasks.generatePomFileForPublication {
+    destination = file("$buildDir/generated-pom.xml")
+  }
 }
+
+//artifacts {
+//  warp10Pig file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
+//}
 
 // DEPLOY ON MAVEN REPO WITH SCP
 uploadArchives {
@@ -284,6 +328,7 @@ uploadArchives {
             repository(url: "scpexe://${stagingURL}") {
                 authentication(userName: "${stagingUser}")
             }
+            genPom(pom)
         }
     }
 }
@@ -295,6 +340,7 @@ publishing {
       groupId 'io.warp10'
       artifactId archivesBaseName
       version version
+      genPom(pom)
     }
   }
 }
