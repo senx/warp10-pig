@@ -257,6 +257,7 @@ def genPom(Object pom) {
     def dependenciesNode = asNode().appendNode('dependencies')
     requiredLibs.each {
       def dependencyNode = dependenciesNode.appendNode('dependency')
+      println "*****"  + it.getModuleGroup()
       dependencyNode.appendNode('groupId', it.getModuleGroup())
       dependencyNode.appendNode('artifactId', it.getModuleName())
       dependencyNode.appendNode('version', it.getModuleVersion())
