@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.zip.GZIPOutputStream;
 
 import io.warp10.continuum.gts.GTSWrapperHelper;
+import io.warp10.continuum.store.Constants;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
@@ -38,23 +39,39 @@ public class GTSUpload extends EvalFunc<Long> {
   /**
    * Dump a GTS (toString)
    *
-   * @param input Tuple containing the GTSWrapper to dump
-   * @return a Bag of String representation of each datapoint
+   * @param input Tuple containing the GTSWrapper or String (Warp10 InputFormat)
+   * @return the number of datapoints uploaded
    * @throws java.io.IOException
    */
   @Override
   public Long exec(Tuple input) throws IOException {
 
+    //
+    // GTSWrapper
+    //
+
     DataByteArray serialized = null;
+
+    //
+    // We can provided GTS String representation directly (InputFormat)
+    //
+
+    String gtsAsString = null;
+
     String params = this.params;
 
     reporter.progress();
 
-    if (1 == input.size()) {
-      serialized = (DataByteArray) input.get(0);      
-    } else if (2 == input.size()) {
+    if (2 == input.size()) {
       params = input.get(0).toString();
-      serialized = (DataByteArray) input.get(1);
+    }
+
+    if (DataType.BYTEARRAY == DataType.findType(input.get(input.size() - 1))) {
+      serialized = (DataByteArray) input.get(input.size() - 1);
+    } else if (DataType.CHARARRAY == DataType.findType(input.get(input.size() - 1))) {
+      gtsAsString = (String) input.get(input.size() - 1);
+    } else {
+      throw new IOException("Invalid input: bytearray(GTSWrapper) or chararray(Input Format)");
     }
 
     //
@@ -93,7 +110,7 @@ public class GTSUpload extends EvalFunc<Long> {
       conn.setRequestMethod("POST");
       conn.setDoOutput(true);
       conn.setDoInput(true);
-      conn.setRequestProperty("X-CityzenData-Token", token);
+      conn.setRequestProperty(Constants.HTTP_HEADER_TOKEN_DEFAULT, token);
       conn.setChunkedStreamingMode(65536);
       
       if (gzip) {
@@ -108,36 +125,46 @@ public class GTSUpload extends EvalFunc<Long> {
       }
       
       PrintWriter pw = new PrintWriter(out);
-      
-      TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
 
-      GTSWrapper gtsWrapper = new GTSWrapper();
+      if (DataType.BYTEARRAY == DataType.findType(input.get(input.size() - 1))) {
+        TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
 
-      try {
-        deserializer.deserialize(gtsWrapper, (serialized.get()));
-      } catch (TException te) {
-        throw new IOException(te);
-      }
+        GTSWrapper gtsWrapper = new GTSWrapper();
 
-      Metadata metadataChunk = new Metadata(gtsWrapper.getMetadata());
-
-      GTSDecoder decoder = GTSWrapperHelper.fromGTSWrapperToGTSDecoder(gtsWrapper);
-
-      StringBuilder metasb = new StringBuilder();
-      GTSHelper.metadataToString(metasb, metadataChunk.getName(), metadataChunk.getLabels());
-    
-      boolean first = true;
-      
-      while(decoder.next()) {
-        reporter.progress();
-        
-        if (!first) {
-          pw.print("=");
-          pw.println(GTSHelper.tickToString(null, decoder.getTimestamp(), decoder.getLocation(), decoder.getElevation(), decoder.getValue()));
-        } else {
-          pw.println(GTSHelper.tickToString(metasb, decoder.getTimestamp(), decoder.getLocation(), decoder.getElevation(), decoder.getValue()));
-          first = false;
+        try {
+          deserializer.deserialize(gtsWrapper, (serialized.get()));
+        } catch (TException te) {
+          throw new IOException(te);
         }
+
+        Metadata metadataChunk = new Metadata(gtsWrapper.getMetadata());
+
+        GTSDecoder decoder = GTSWrapperHelper.fromGTSWrapperToGTSDecoder(gtsWrapper);
+
+        StringBuilder metasb = new StringBuilder();
+        GTSHelper.metadataToString(metasb, metadataChunk.getName(),
+            metadataChunk.getLabels());
+
+        boolean first = true;
+
+        while (decoder.next()) {
+          reporter.progress();
+
+          if (!first) {
+            pw.print("=");
+            pw.println(GTSHelper.tickToString(null, decoder.getTimestamp(),
+                decoder.getLocation(), decoder.getElevation(),
+                decoder.getValue()));
+          } else {
+            pw.println(GTSHelper.tickToString(metasb, decoder.getTimestamp(),
+                decoder.getLocation(), decoder.getElevation(),
+                decoder.getValue()));
+            first = false;
+          }
+          count++;
+        }
+      } else {
+        pw.println(gtsAsString);
         count++;
       }
 
