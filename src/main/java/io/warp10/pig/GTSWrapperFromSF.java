@@ -88,7 +88,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
    * @param chunkwidth (chunk mode)
    *
    */
-  public GTSWrapperFromSF(String... args) {
+  public GTSWrapperFromSF(String... args) throws IOException {
       this.mode = args[0];
 
       this.genIds = Boolean.valueOf(args[1]).booleanValue();
@@ -103,7 +103,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
         this.clipTo = Long.valueOf(args[3]);
         this.chunkwidth = Long.valueOf(args[4]);
       } else {
-        System.err.println("clipFrom, clipTo and chunkwidth are required in chunk mode");
+        throw new IOException("clipFrom, clipTo and chunkwidth are required in chunk mode");
       }
     }
   }

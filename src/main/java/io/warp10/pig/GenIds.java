@@ -42,8 +42,7 @@ public class GenIds extends EvalFunc<Tuple> {
   public Tuple exec(Tuple input) throws IOException {
 
     if (null == input || input.size() != 1) {
-      System.err.println("1 parameter is required ! - GTSWrapper");
-      return null;
+      throw new IOException("1 parameter is required ! - GTSWrapper");
     }
 
     reporter.progress();
