@@ -25,15 +25,15 @@ import java.util.Map;
  * {(ts, elev, value)} or {metadata: [], {(ts, elev, value)}}
  * {(ts, value)} or {metadata: [], {(ts, value)}}
  */
-public class ConvertToGTS  extends EvalFunc<DataBag> {
+public class PigToGTS extends EvalFunc<DataBag> {
 
   private final long threshold;
 
-  public ConvertToGTS() {
+  public PigToGTS() {
     this.threshold = 10000000L;
   }
 
-  public ConvertToGTS(String... args) {
+  public PigToGTS(String... args) {
     this.threshold = Long.parseLong(args[0]);
   }
 
