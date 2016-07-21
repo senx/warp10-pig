@@ -173,7 +173,7 @@ public class GTSUpload extends EvalFunc<Long> {
       int respcode = conn.getResponseCode();
       
       if (HttpURLConnection.HTTP_OK != respcode) {
-        throw new IOException(conn.getResponseMessage());
+        throw new IOException("HTTP code: " + respcode + " - " + conn.getResponseMessage());
       }
     } finally {
       if (null != conn) { conn.disconnect(); }
