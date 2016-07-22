@@ -132,7 +132,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.7-9-gf13fe19'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.0.8-2-gee90ef3'
 
   //
   // Geo
