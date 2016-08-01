@@ -36,21 +36,29 @@ public class WarpScriptUtils {
     //
     // Load the Warpscript file
     //
-
-    InputStream fis = WarpScriptUtils.class.getClassLoader().getResourceAsStream(warpscriptName);
-    BufferedReader br = new BufferedReader(new InputStreamReader(fis, Charsets.UTF_8));
-
     StringBuffer scriptSB = new StringBuffer();
+    InputStream fis = null;
+    try {
 
-    while(true) {
-      String line = br.readLine();
-      if (null == line) {
-        break;
+      fis = WarpScriptUtils.class.getClassLoader()
+          .getResourceAsStream(warpscriptName);
+      BufferedReader br = new BufferedReader(
+          new InputStreamReader(fis, Charsets.UTF_8));
+
+      while (true) {
+        String line = br.readLine();
+        if (null == line) {
+          break;
+        }
+        scriptSB.append(line).append("\n");
       }
-      scriptSB.append(line).append("\n");
+    } catch (IOException ioe) {
+      throw new IOException("Warpscript file should not exist", ioe);
+    } finally {
+      if (null != fis) {
+        fis.close();
+      }
     }
-
-    fis.close();
 
     return scriptSB.toString();
 
