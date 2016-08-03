@@ -137,12 +137,13 @@ public class PigToWarpscript {
       //
       // List of casted objects (atomic type)
       //
+
       List<Object> elementsCasted = new ArrayList<>();
 
       //
       // We have to iterate : if bytearray => cast to GeoTimeSerie
-      // Important : Only atomic types have been accepted in tuple
       //
+
       for (int i = 0; i < tuple.size(); i++) {
         Object currentObject = tuple.get(i);
         if (DataType.isAtomic(currentObject)) {
@@ -158,10 +159,10 @@ public class PigToWarpscript {
 
       objectCasted = elementsCasted;
 
-    } else {
+    } else if (tuple.size() == 1) {
 
       //
-      // element (singleton) must be an atomic type
+      // singleton
       //
 
       Object singleElt = tuple.get(0);
@@ -171,6 +172,14 @@ public class PigToWarpscript {
       } else {
         objectCasted = complexToWarpscript(singleElt);
       }
+
+    } else {
+
+      //
+      // Tuple is empty
+      //
+
+      objectCasted = new ArrayList<>();
 
     }
 
