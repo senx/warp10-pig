@@ -132,7 +132,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.8-2-gee90ef3'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.0.10-14-g103dcaa'
 
   //
   // Geo
@@ -275,6 +275,14 @@ uploadArchives {
         repositories.mavenDeployer {
             configuration = configurations.warp10Pig
             uniqueVersion = false
+
+            ext.stagingUser = project.hasProperty('stagingUser') ? project.property('stagingUser') : System.getenv('STAGING_USER')
+            ext.stagingURL = project.hasProperty('stagingURL') ? project.property('stagingURL') : System.getenv('STAGING_URL')
+
+            if (null == stagingUser || null == stagingURL) {
+                stagingUser = ''
+                stagingURL = ''
+            }
 
             repository(url: "scpexe://${stagingURL}") {
                 authentication(userName: "${stagingUser}")
