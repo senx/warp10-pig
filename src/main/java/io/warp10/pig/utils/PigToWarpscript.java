@@ -167,7 +167,9 @@ public class PigToWarpscript {
 
       Object singleElt = tuple.get(0);
 
-      if (DataType.isAtomic(singleElt)) {
+      if (null == singleElt) {
+        objectCasted = null;
+      } else if (DataType.isAtomic(singleElt)) {
         objectCasted = atomicToWarpscript(singleElt);
       } else {
         objectCasted = complexToWarpscript(singleElt);
