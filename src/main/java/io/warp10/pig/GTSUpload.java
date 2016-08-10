@@ -85,6 +85,7 @@ public class GTSUpload extends EvalFunc<Long> {
     String endpoint = null;
     String token = null;
     boolean gzip = false;
+    String header = null;
     
     while (i < tokens.length) {
       if ("-t".equals(tokens[i])) {
@@ -98,6 +99,10 @@ public class GTSUpload extends EvalFunc<Long> {
       if ("-c".equals(tokens[i])) {
         gzip = true;        
       }
+      if ("-H".equals(tokens[i])) {
+        i++;
+        header = tokens[i];
+      }
       i++;
     }
     
@@ -110,7 +115,7 @@ public class GTSUpload extends EvalFunc<Long> {
       conn.setRequestMethod("POST");
       conn.setDoOutput(true);
       conn.setDoInput(true);
-      conn.setRequestProperty(Constants.HTTP_HEADER_TOKEN_DEFAULT, token);
+      conn.setRequestProperty(null == header ? Constants.HTTP_HEADER_TOKEN_DEFAULT : header, token);
       conn.setChunkedStreamingMode(65536);
       
       if (gzip) {
