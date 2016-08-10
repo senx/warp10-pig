@@ -3,9 +3,11 @@ package io.warp10.pig.utils;
 import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
-
 import io.warp10.script.WarpScriptStack;
+
+import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataByteArray;
+import org.apache.pig.data.DefaultBagFactory;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.thrift.TException;
@@ -13,10 +15,13 @@ import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
 
 /**
  * Warpscript Caster to Pig
@@ -35,6 +40,10 @@ public class WarpscriptToPig {
 
     Object objCasted = warpscriptObj;
 
+    if (null == objCasted) {
+      return null;
+    }
+    
     if (! warpscriptObj.getClass().isPrimitive()) {
 
       //
@@ -58,6 +67,19 @@ public class WarpscriptToPig {
 
         objCasted = convertMap;
 
+      } else if (warpscriptObj instanceof Set || warpscriptObj instanceof Vector) {
+        
+        DataBag bag = DefaultBagFactory.getInstance().newDefaultBag();
+        
+        for (Object o: (Collection<Object>) warpscriptObj) {
+          Tuple t = TupleFactory.getInstance().newTuple(1);
+          
+          t.set(0, cast(o));
+          
+          bag.add(t);
+        }
+        
+        objCasted = bag;
       } else if (warpscriptObj instanceof List) {
 
         Tuple tuple = TupleFactory.getInstance().newTuple(((List) warpscriptObj).size());
@@ -82,19 +104,16 @@ public class WarpscriptToPig {
           }
         }
         objCasted = tuple;
-
       } else if (warpscriptObj instanceof GeoTimeSerie) {
 
         objCasted = geoTimeSerietoGTSWrapper((GeoTimeSerie)warpscriptObj);
-
-      } else if (warpscriptObj instanceof WarpScriptStack.Mark) {
-
-        objCasted = ((WarpScriptStack.Mark) warpscriptObj).toString();
 
       } else if (warpscriptObj instanceof byte[]) {
 
         objCasted = new DataByteArray((byte[]) warpscriptObj);
 
+      } else {
+        objCasted = warpscriptObj.toString();
       }
     }
 
