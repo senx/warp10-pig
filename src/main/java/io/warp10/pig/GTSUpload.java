@@ -66,6 +66,10 @@ public class GTSUpload extends EvalFunc<Long> {
       params = input.get(0).toString();
     }
 
+    if (input.size() > 2) {
+      throw new IOException("Invalid input, should be a tuple containing a GTS or parameters and GTS.");
+    }
+    
     if (DataType.BYTEARRAY == DataType.findType(input.get(input.size() - 1))) {
       serialized = (DataByteArray) input.get(input.size() - 1);
     } else if (DataType.CHARARRAY == DataType.findType(input.get(input.size() - 1))) {
