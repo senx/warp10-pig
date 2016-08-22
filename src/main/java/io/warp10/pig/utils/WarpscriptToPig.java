@@ -3,16 +3,6 @@ package io.warp10.pig.utils;
 import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.gts.GeoTimeSerie;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
-import io.warp10.script.WarpScriptStack;
-
-import org.apache.pig.data.DataBag;
-import org.apache.pig.data.DataByteArray;
-import org.apache.pig.data.DefaultBagFactory;
-import org.apache.pig.data.Tuple;
-import org.apache.pig.data.TupleFactory;
-import org.apache.thrift.TException;
-import org.apache.thrift.TSerializer;
-import org.apache.thrift.protocol.TCompactProtocol;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -22,6 +12,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
+import org.apache.pig.data.DefaultBagFactory;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+import org.apache.thrift.TException;
+import org.apache.thrift.TSerializer;
+import org.apache.thrift.protocol.TCompactProtocol;
 
 /**
  * Warpscript Caster to Pig
@@ -44,7 +44,7 @@ public class WarpscriptToPig {
       return null;
     }
     
-    if (! warpscriptObj.getClass().isPrimitive()) {
+    if (!ClassUtils.isPrimitiveOrWrapper(warpscriptObj.getClass())) {
 
       //
       // Map => Map : can contain complex object
@@ -84,7 +84,6 @@ public class WarpscriptToPig {
 
         Tuple tuple = TupleFactory.getInstance().newTuple(((List) warpscriptObj).size());
 
-
         for (int i=0; i<((List) warpscriptObj).size(); i++) {
           Object elt = ((List) warpscriptObj).get(i);
 
@@ -118,7 +117,6 @@ public class WarpscriptToPig {
     }
 
     return objCasted;
-
   }
 
   /**
