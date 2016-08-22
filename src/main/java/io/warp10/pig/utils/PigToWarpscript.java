@@ -119,21 +119,9 @@ public class PigToWarpscript {
 
   protected static Object pigTupleToWarpscript(Tuple tuple) throws IOException {
 
-    Object objectCasted;
+    Object objectCasted = null;
 
-    //
-    // If one field and Tuple:
-    // Ignore the first level.
-    //
-
-    if (tuple.size() > 1) {
-
-      //
-      // List of elements in the current tuple
-      //
-
-      List<Object> inputElements = tuple.getAll();
-
+    if (tuple.size() > 0) {
       //
       // List of casted objects (atomic type)
       //
@@ -158,35 +146,15 @@ public class PigToWarpscript {
       //
 
       objectCasted = elementsCasted;
-
-    } else if (tuple.size() == 1) {
-
-      //
-      // singleton
-      //
-
-      Object singleElt = tuple.get(0);
-
-      if (null == singleElt) {
-        objectCasted = null;
-      } else if (DataType.isAtomic(singleElt)) {
-        objectCasted = atomicToWarpscript(singleElt);
-      } else {
-        objectCasted = complexToWarpscript(singleElt);
-      }
-
     } else {
-
       //
       // Tuple is empty
       //
 
       objectCasted = new ArrayList<>();
-
     }
 
     return objectCasted;
-
   }
 
 }
