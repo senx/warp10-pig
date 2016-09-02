@@ -85,13 +85,11 @@ public class PigToWarpscript {
           Object o = entry.getValue();
 
           if (DataType.isAtomic(o)) {
-
             mapCasted.put(entry.getKey(), atomicToWarpscript(o));
-
+          } else if (DataType.NULL == DataType.findType(o)) {
+            mapCasted.put(entry.getKey(), null);
           } else {
-
             System.err.println(DataType.findTypeName(o) + " cannot be cast to Warpscript type - Type of Map value nust be atomic.");
-
           }
 
         }
@@ -103,13 +101,9 @@ public class PigToWarpscript {
       default:
 
         if (DataType.BAG == pigDataType) {
-
           throw new ExecException(DataType.findTypeName(value) + " : iterate on Bag");
-
         } else {
-
           throw new ExecException(DataType.findTypeName(value) + " cannot be cast to Warpscript yet..");
-
         }
 
     }
@@ -136,6 +130,8 @@ public class PigToWarpscript {
         Object currentObject = tuple.get(i);
         if (DataType.isAtomic(currentObject)) {
           elementsCasted.add(atomicToWarpscript(currentObject));
+        } else if (DataType.NULL == DataType.findType(currentObject)) {
+          elementsCasted.add(null);
         } else {
           elementsCasted.add(complexToWarpscript(currentObject));
         }
