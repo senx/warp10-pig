@@ -2,12 +2,14 @@ package io.warp10.pig;
 
 import io.warp10.continuum.Configuration;
 import io.warp10.pig.utils.PigToWarpscript;
+import io.warp10.pig.utils.PigUtils;
 import io.warp10.pig.utils.StackElement;
 import io.warp10.script.WarpScriptExecutor;
 import io.warp10.script.WarpScriptStack;
 import io.warp10.crypto.SipHashInline;
 import io.warp10.pig.utils.WarpScriptUtils;
 import io.warp10.script.WarpScriptStopException;
+
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
@@ -140,30 +142,9 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
 
         for (int level=1; level<input.size(); level++) {
           reporter.progress();
-          if (DataType.isAtomic(input.get(level))) {
-            stackInput.add(PigToWarpscript.atomicToWarpscript(input.get(level)));
-          } else {
-            Object elt = input.get(level);
-
-            //
-            // If type is Bag or Tuple: ignore first level
-            //
-
-            if (DataType.findType(elt) == DataType.BAG) {
-              Iterator<Tuple> iter = ((DataBag) elt).iterator();
-              while (iter.hasNext()) {
-                Tuple tuple = iter.next();
-                stackInput.add(PigToWarpscript.complexToWarpscript(tuple));
-              }
-
-            } else if (DataType.findType(elt) == DataType.TUPLE) {
-              stackInput.add(PigToWarpscript.complexToWarpscript(input.get(level)));
-            }
-          }
+          
+          stackInput.add(PigUtils.fromPig(input.get(level)));
         }
-
-        stackInput.add(new WarpScriptStack.Mark());
-
       }
 
       //
@@ -180,7 +161,6 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
         String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
 
         executor = new WarpScriptExecutor(WarpScriptExecutor.StackSemantics.NEW, mc2FileContent, null, PigStatusReporter.getInstance());
-
       } else {
 
         //
@@ -197,7 +177,6 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
         String mc2Content = "'" + String.valueOf(hashMacro) + "' '" + WARPSCRIPT_ID_VARIABLE + "' STORE " + mc2;
 
         executor = new WarpScriptExecutor(WarpScriptExecutor.StackSemantics.NEW, mc2Content, null, PigStatusReporter.getInstance());
-
       }
 
       stackResult = executor.exec(stackInput);

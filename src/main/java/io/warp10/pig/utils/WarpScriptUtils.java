@@ -84,7 +84,7 @@ public class WarpScriptUtils {
       // Cast object to Pig type
       //
 
-      Object pigObj = WarpscriptToPig.cast(stack.get(level));
+      Object pigObj = PigUtils.toPig(stack.get(level));
 
       //
       // level
@@ -96,36 +96,6 @@ public class WarpScriptUtils {
 
     return stackAstuple;
 
-  }
-
-  /**
-   *
-   * @param encoded
-   * @return GTSWrapper
-   */
-  public static GTSWrapper encodedToGTSWrapper(byte[] encoded)
-      throws IOException {
-
-    GTSWrapper gtsWrapper = new GTSWrapper();
-
-    TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
-
-    try {
-      deserializer.deserialize(gtsWrapper, encoded);
-    } catch (TException te) {
-      throw new IOException(te);
-    }
-
-    Metadata metadata = null;
-    if (null != gtsWrapper.getMetadata()) {
-      metadata = new Metadata(gtsWrapper.getMetadata());
-    } else {
-      metadata = new Metadata();
-    }
-
-    gtsWrapper.setMetadata(metadata);
-
-    return gtsWrapper;
   }
 
   /**
