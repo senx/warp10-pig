@@ -1,23 +1,24 @@
 package io.warp10.pig;
 
 import io.warp10.continuum.Configuration;
-import io.warp10.pig.utils.PigToWarpscript;
+import io.warp10.crypto.SipHashInline;
 import io.warp10.pig.utils.PigUtils;
-import io.warp10.pig.utils.StackElement;
+import io.warp10.pig.utils.WarpScriptUtils;
 import io.warp10.script.WarpScriptExecutor;
 import io.warp10.script.WarpScriptStack;
-import io.warp10.crypto.SipHashInline;
-import io.warp10.pig.utils.WarpScriptUtils;
 import io.warp10.script.WarpScriptStopException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.pig.EvalFunc;
-import org.apache.pig.data.*;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataType;
+import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 import org.apache.pig.tools.pigstats.PigStatusReporter;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 
 /**
  * UDF to run Warpscript onto an WarpscriptStack
