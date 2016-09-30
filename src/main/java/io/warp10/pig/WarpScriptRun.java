@@ -7,11 +7,15 @@ import io.warp10.pig.utils.WarpScriptUtils;
 import io.warp10.script.WarpScriptExecutor;
 import io.warp10.script.WarpScriptStack;
 import io.warp10.script.WarpScriptStopException;
+import io.warp10.script.WarpScriptExecutor.StackSemantics;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.DataBag;
@@ -66,23 +70,43 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
 
   protected WarpScriptExecutor executor = null;
 
+  private final StackSemantics semantics;
+  
+  /**
+   * For keys above 1024 characters, we'll use the hash instead
+   */
+  private static final int EXECUTOR_MAX_KEY_SIZE = 1024;
+  private static final int EXECUTOR_CACHE_SIZE = 128;
+  
+  private static final Map<Object,WarpScriptExecutor> executors = new LinkedHashMap<Object, WarpScriptExecutor>(100, 0.75F, true) {
+    @Override
+    protected boolean removeEldestEntry(java.util.Map.Entry<Object, WarpScriptExecutor> eldest) {
+      return this.size() > EXECUTOR_CACHE_SIZE;
+    }
+  };
   public WarpScriptRun() {
-    System.setProperty(Configuration.WARP_TIME_UNITS, DEFAULT_TIME_UNITS_PER_MS);
-    System.setProperty(Configuration.WARPSCRIPT_MAX_GTS, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_OPS, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_SYMBOLS, String.valueOf(Integer.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_BUCKETS, String.valueOf(Integer.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_DEPTH, String.valueOf(Integer.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_FETCH, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_LOOP_DURATION, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_PIXELS, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_WEBCALLS, String.valueOf(Long.MAX_VALUE));
-    System.setProperty(Configuration.WARPSCRIPT_MAX_RECURSION, String.valueOf(Integer.MAX_VALUE));
-    System.setProperty(WarpScriptStack.ATTRIBUTE_HADOOP_PROGRESSABLE, String.valueOf(Long.MAX_VALUE));
+    this(StackSemantics.PERTHREAD.toString());
+  }
+  
+  public WarpScriptRun(String... args) {        
+    if (0 == args.length) {
+      semantics = StackSemantics.PERTHREAD;
+    } else {
+      semantics = StackSemantics.valueOf(args[0]);
+    }
+   
+    if (args.length > 1) {
+      for (int i = 1; i < args.length; i++) {
+        String[] tokens = args[i].split("=");
+        System.setProperty(tokens[0], tokens[1]);
+      }
+    } else {
+      System.setProperty(Configuration.WARP_TIME_UNITS, DEFAULT_TIME_UNITS_PER_MS);
+    }
   }
 
   /**
-   * Exec a Warpscript file or Warpscript commands onto a Stack with input data
+   * Exec a Warpscript file or WarpScript commands onto a Stack with input data
    * Data are pushed onto the top of the stack according to their level.
    * Warpscript file (XXX.mc2) should start with '@': '@file.mc2'
    * To use a macro we put a space before the '@': ' @macro'
@@ -109,16 +133,68 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
     List<Object> stackResult = null;
 
     if (input.size() < 1) {
-      throw new IOException("Invalid input, expecting a tuple with at least one element '@mc2 or 'Warpscript commands' and (optional) data: ('@mc2 or 'Warpscript commands': chararray, object: any, ...)");
+      throw new IOException("Invalid input, expecting a tuple with at least one element '@file' or 'WarpScript commands' and (optional) data: ('@file' or 'WarpScript commands': chararray, object: any, ...)");
     }
 
     //
-    // Get first field (script or Warpscript commands)
+    // Get first field (path to script or WarpScript code)
     //
 
     String mc2 = (String) input.get(0);
 
+    //
+    // Compute hash of mc2
+    //
+
+    Object key = mc2;
+    
+    if (mc2.length() > EXECUTOR_MAX_KEY_SIZE) {
+      byte[] keyHash = mc2.getBytes(StandardCharsets.UTF_8);
+      key = SipHashInline.hash24(SIPKEY_SCRIPT[0], SIPKEY_SCRIPT[1], keyHash, 0, keyHash.length);
+    }
+
+    //
+    // Check if we have an executor for this hash
+    //
+    
+    WarpScriptExecutor executor = executors.get(key);
+        
     try {
+
+      if (null == executor) {
+        byte[] keyHash = mc2.getBytes(StandardCharsets.UTF_8);
+        long hash = SipHashInline.hash24(SIPKEY_SCRIPT[0], SIPKEY_SCRIPT[1], keyHash, 0, keyHash.length);
+
+        synchronized(executors) {
+          if (mc2.startsWith("@")) {
+
+            //
+            // delete the @ character
+            //
+
+            String filePath = mc2.substring(1);
+            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
+
+            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance());
+          } else {
+
+            //
+            // String with Warpscript commands
+            //
+
+            //
+            // Compute the hash against String content to identify this run
+            //
+
+            String mc2Content = "'" + String.valueOf(hash) + "' '" + WARPSCRIPT_ID_VARIABLE + "' STORE " + mc2;
+
+            executor = new WarpScriptExecutor(this.semantics, mc2Content, null, PigStatusReporter.getInstance());
+          }      
+          
+          executors.put(key, executor);
+        }
+        
+      }
 
       //
       // data (input)
@@ -152,33 +228,6 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
       // Script or Warpscript commands ?
       //
 
-      if (mc2.startsWith("@")) {
-
-        //
-        // delete the @ character
-        //
-
-        String filePath = mc2.substring(1);
-        String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
-
-        executor = new WarpScriptExecutor(WarpScriptExecutor.StackSemantics.NEW, mc2FileContent, null, PigStatusReporter.getInstance());
-      } else {
-
-        //
-        // String with Warpscript commands
-        //
-
-        //
-        // Compute the hash against String content to identify this run
-        //
-
-        byte[] keyHash = mc2.getBytes(StandardCharsets.UTF_8);
-        Long hashMacro = SipHashInline.hash24(SIPKEY_SCRIPT[0], SIPKEY_SCRIPT[1], keyHash, 0, keyHash.length);
-
-        String mc2Content = "'" + String.valueOf(hashMacro) + "' '" + WARPSCRIPT_ID_VARIABLE + "' STORE " + mc2;
-
-        executor = new WarpScriptExecutor(WarpScriptExecutor.StackSemantics.NEW, mc2Content, null, PigStatusReporter.getInstance());
-      }
 
       stackResult = executor.exec(stackInput);
 
@@ -208,5 +257,4 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
     Schema.FieldSchema fieldSchema = new Schema.FieldSchema("stack", DataType.TUPLE);
     return new Schema(fieldSchema);
   }
-
 }
