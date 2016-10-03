@@ -33,6 +33,10 @@ public class Warp10LoadFunc extends LoadFunc implements LoadMetadata {
   private String splitsSelector;
   private String splitsToken;
 
+  static {
+    PigWarpConfig.ensureConfig();
+  }
+  
   public Warp10LoadFunc() {
   }
 

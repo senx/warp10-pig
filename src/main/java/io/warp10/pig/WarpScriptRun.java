@@ -18,10 +18,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.pig.EvalFunc;
+import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigMapReduce;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
+import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.tools.pigstats.PigStatusReporter;
 
 /**
@@ -84,7 +86,12 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
       return this.size() > EXECUTOR_CACHE_SIZE;
     }
   };
-  public WarpScriptRun() {
+  
+  static {
+    PigWarpConfig.ensureConfig();
+  }
+  
+  public WarpScriptRun() {    
     this(StackSemantics.PERTHREAD.toString());
   }
   
