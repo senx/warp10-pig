@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.Reporter;
 
 public class RangeInputFormat extends InputFormat<LongWritable, LongWritable> implements org.apache.hadoop.mapred.InputFormat<LongWritable, LongWritable> {
@@ -128,10 +129,10 @@ public class RangeInputFormat extends InputFormat<LongWritable, LongWritable> im
   
  
   @Override
-  public java.util.List<InputSplit> getSplits(org.apache.hadoop.mapreduce.JobContext context) throws IOException ,InterruptedException {
+  public List<InputSplit> getSplits(org.apache.hadoop.mapreduce.JobContext context) throws IOException ,InterruptedException {
     return createSplits(context.getConfiguration().getInt(RANGE_SPLITS, 1));
   }
-    
+
   @Override
   public RecordReader<LongWritable, LongWritable> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {    
     return new RangeRecordReader();
