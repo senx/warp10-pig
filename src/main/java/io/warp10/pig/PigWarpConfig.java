@@ -7,11 +7,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import org.apache.pig.impl.util.UDFContext;
+
 public class PigWarpConfig {
     
   static {
     if (!WarpConfig.isPropertiesSet()) {
-      String conf = System.getProperty(WarpConfig.WARP10_CONFIG);
+      
+      String conf = UDFContext.getUDFContext().getClientSystemProps().getProperty(WarpConfig.WARP10_CONFIG);
       
       InputStream config = null;
       
