@@ -2,10 +2,11 @@ package io.warp10.pig;
 
 import java.io.IOException;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.pig.Expression;
 import org.apache.pig.LoadFunc;
 import org.apache.pig.LoadMetadata;
@@ -21,56 +22,80 @@ import org.apache.pig.impl.logicalLayer.schema.Schema;
 /**
  * A handy load function which produces a sequence of LONGs
  * of the specified size and starting from 0.
+ * 
+ * Usage:
+ * 
+ * REL = LOAD 'range://start:count' USING io.warp10.pig.RangeLoadFunc();
+ * 
+ * Set range.splits to the desired number of splits (defaults to 1).
  */
 public class RangeLoadFunc extends LoadFunc implements LoadMetadata {
 
   private TupleFactory tfactory = new BinSedesTupleFactory();
 
-  private final long occurrences;
+  private final RangeInputFormat inputFormat;
   
-  private long count = 0;
-
+  private RecordReader reader = null;
+  
+  public RangeLoadFunc() {
+    this.inputFormat = new RangeInputFormat();
+  }
+  
   public RangeLoadFunc(String... args) {
-    if (1 != args.length) {
-      throw new RuntimeException("Expecting number of elements as parameter.");
-    }    
+    this();
+    String[] tokens = args[0].split(":");        
     
-    this.occurrences = Long.parseLong(args[0].toString());    
+    this.inputFormat.setRange(Long.parseLong(tokens[0]), Long.parseLong(tokens[1]));
   }
 
   @Override
   public InputFormat getInputFormat() throws IOException {
-    return new TextInputFormat();
+    return this.inputFormat;
   }
 
   @Override
   public Tuple getNext() throws IOException {
-    if (this.count >= this.occurrences) {
-      return null;
-    }
+    
+    try {
+      if (!reader.nextKeyValue()) {
+        return null;
+      }
       
-    Tuple t = this.tfactory.newTuple(1);
+      
+      Tuple t = this.tfactory.newTuple(2);
 
-    t.set(0, this.count++);
+      t.set(0, ((LongWritable) reader.getCurrentKey()).get());
+      t.set(1, ((LongWritable) reader.getCurrentValue()).get());
 
-    return t;
+      return t;      
+    } catch (InterruptedException ie) {
+      throw new IOException(ie);
+    }
   }
 
   @Override
-  public void prepareToRead(RecordReader reader, PigSplit split) throws IOException {}
+  public void prepareToRead(RecordReader reader, PigSplit split) throws IOException {
+    this.reader = reader;
+  }
 
   @Override
   public void setLocation(String location, Job job) throws IOException {
-    org.apache.hadoop.mapreduce.lib.input.TextInputFormat.setInputPaths(job, location);
+    if (!location.startsWith("range://")) {
+      throw new IOException("Location is expected to be of the form range://start:count");
+    }
+    String[] tokens = location.substring(8).split(":");
+    
+    this.inputFormat.setRange(Long.parseLong(tokens[0]), Long.parseLong(tokens[1]));
   }
 
   @Override
   public ResourceSchema getSchema(String location, Job job) throws IOException {
     ResourceSchema schema = new ResourceSchema();
 
-    ResourceSchema.ResourceFieldSchema[] fields = new ResourceSchema.ResourceFieldSchema[1];
+    ResourceSchema.ResourceFieldSchema[] fields = new ResourceSchema.ResourceFieldSchema[2];
 
     fields[0] = new ResourceSchema.ResourceFieldSchema(new Schema.FieldSchema("seqno", DataType.LONG));
+    fields[1] = new ResourceSchema.ResourceFieldSchema(new Schema.FieldSchema("value", DataType.LONG));
 
     schema.setFields(fields);
     return schema;
@@ -89,5 +114,9 @@ public class RangeLoadFunc extends LoadFunc implements LoadMetadata {
   @Override
   public void setPartitionFilter(Expression partitionFilter) throws IOException {
   }
-
+  
+  @Override
+  public String relativeToAbsolutePath(String location, Path curDir) throws IOException {
+    return location;
+  }
 }
