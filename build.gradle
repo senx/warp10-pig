@@ -132,7 +132,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.14-35-g22116b5'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.0.14-57-g391fd14'
 
   //
   // Geo
@@ -224,8 +224,8 @@ gradle.taskGraph.whenReady { graph ->
 jar {
   manifest {
     attributes(
-      "Implementation-Title": "Warp10-Pig",
-      "Implementation-Version": version)
+        "Implementation-Title": "Warp10-Pig",
+        "Implementation-Version": version)
   }
 }
 
