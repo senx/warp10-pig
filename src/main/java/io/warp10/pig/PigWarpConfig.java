@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Map.Entry;
 
 import org.apache.pig.impl.util.UDFContext;
 
@@ -31,6 +32,9 @@ public class PigWarpConfig {
         }
       } else {
         try {
+          for (Entry<Object,Object> entry: UDFContext.getUDFContext().getClientSystemProps().entrySet()) {
+            System.setProperty(entry.getKey().toString(), entry.getValue().toString());
+          }
           WarpConfig.safeSetProperties((Reader) null);
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
