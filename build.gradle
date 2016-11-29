@@ -260,10 +260,6 @@ task pack(type: Jar, dependsOn: jar) {
   with jar
 }
 
-artifacts {
-  warp10Pig file: pack.archivePath, builtBy: pack, name: 'warp10-pig', type: 'jar'
-}
-
 // DEPLOY ON MAVEN REPO WITH SCP
 uploadArchives {
     repositories {
@@ -289,6 +285,7 @@ uploadArchives {
 publishing {
   publications {
     warp10Pig(MavenPublication) {
+      artifact file("${buildDir}/libs/warp10-pig-" + version + ".jar")
       groupId 'io.warp10'
       artifactId archivesBaseName
       version version
@@ -311,7 +308,7 @@ bintray {
       licenses = ['Apache-2.0']
       vcsUrl = 'https://github.com/cityzendata/warp10-pig.git'
       version {
-        name = version
+        name = getVersionName()
         released  = new Date()
         vcsTag = version
       }
@@ -321,5 +318,5 @@ bintray {
 //
 // Tasks dependencies
 //
-uploadArchives.dependsOn jar
-bintrayUpload.dependsOn jar
+uploadArchives.dependsOn pack
+bintrayUpload.dependsOn pack
