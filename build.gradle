@@ -132,7 +132,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.1.0'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.2.3'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
