@@ -131,13 +131,8 @@ dependencies {
   // Compile task dependency
   //
 
-  compile group: 'org.apache.pig', name: 'pig', version: '0.15.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.0.14-57-g391fd14'
-
-  //
-  // Geo
-  //
-  compile group: 'com.geoxp', name: 'geoxplib', version: '1.0.0-rc1'
+  compile group: 'org.apache.pig', name: 'pig', version: '0.16.0'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.2.4'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
@@ -224,8 +219,8 @@ gradle.taskGraph.whenReady { graph ->
 jar {
   manifest {
     attributes(
-        "Implementation-Title": "Warp10-Pig",
-        "Implementation-Version": version)
+      "Implementation-Title": "Warp10-Pig",
+      "Implementation-Version": version)
   }
 }
 

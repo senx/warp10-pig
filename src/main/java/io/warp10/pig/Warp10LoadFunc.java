@@ -37,12 +37,19 @@ public class Warp10LoadFunc extends LoadFunc implements LoadMetadata {
     PigWarpConfig.ensureConfig();
   }
   
+  private String suffix = null;
+  
   public Warp10LoadFunc() {
+    this.suffix = null;
   }
-
+  
+  public Warp10LoadFunc(String suffix) {
+    this.suffix = suffix;
+  }
+  
   @Override
   public InputFormat getInputFormat() throws IOException {
-    return (InputFormat) new Warp10InputFormat();
+    return (InputFormat) new Warp10InputFormat(this.suffix);
   }
 
   @Override
