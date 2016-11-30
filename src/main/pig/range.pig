@@ -2,7 +2,7 @@
 -- This is an example of the use of the RangeLoadFunc provided
 -- by Warp 10 Pig.
 --
--- This pseudo load function will produce a relationship containing
+-- This pseudo load function will produce a relation containing
 -- numbers in sequence.
 --
 -- The pseudo location has the syntax 'range://START:COUNT' and will
