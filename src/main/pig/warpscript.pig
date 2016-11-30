@@ -47,6 +47,10 @@ REGISTER warp10-pig-0.0.2.jar;
 REGISTER warp10.conf;
 SET warp10.config 'warp10.conf';
 
+-- Alternatively if you do not need to configure many properties, simply set
+-- the Warp 10 time units using the following line:
+-- SET warp.timeunits 'us';
+
 --
 -- Define the WarpScriptRun UDF
 --
