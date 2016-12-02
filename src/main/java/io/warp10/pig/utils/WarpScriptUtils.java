@@ -30,8 +30,7 @@ public class WarpScriptUtils {
    * @param warpscriptName name of the script to parse
    * @return String
    */
-  public static String parseScript(String warpscriptName)
-      throws IOException, WarpScriptException {
+  public static String parseScript(String warpscriptName) throws IOException, WarpScriptException {
 
     //
     // Load the Warpscript file
@@ -40,10 +39,13 @@ public class WarpScriptUtils {
     InputStream fis = null;
     try {
 
-      fis = WarpScriptUtils.class.getClassLoader()
-          .getResourceAsStream(warpscriptName);
-      BufferedReader br = new BufferedReader(
-          new InputStreamReader(fis, Charsets.UTF_8));
+      fis = WarpScriptUtils.class.getClassLoader().getResourceAsStream(warpscriptName);
+      
+      if (null == fis) {
+        throw new IOException("Path '" + warpscriptName + "' not found, you may have forgotten to REGISTER your script.");
+      }
+      
+      BufferedReader br = new BufferedReader(new InputStreamReader(fis, Charsets.UTF_8));
 
       while (true) {
         String line = br.readLine();
