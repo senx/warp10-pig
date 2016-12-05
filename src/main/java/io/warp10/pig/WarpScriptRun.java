@@ -225,7 +225,9 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
         //
 
         for (int level=1; level<input.size(); level++) {
-          reporter.progress();
+          if (null != reporter) {
+            reporter.progress();
+          }
           
           stackInput.add(PigUtils.fromPig(input.get(level)));
         }
@@ -234,7 +236,6 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
       //
       // Script or Warpscript commands ?
       //
-
 
       stackResult = executor.exec(stackInput);
 
@@ -250,9 +251,13 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
       //
       if (null != stackResult) {
         stackOut = WarpScriptUtils.stackToPig(stackResult);
+      } else {
+        wse.printStackTrace();
+        throw new IOException(wse);
       }
-    } catch(Exception ee) {
-      throw new IOException(ee);
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw new IOException(t);
     }
 
     return stackOut;
