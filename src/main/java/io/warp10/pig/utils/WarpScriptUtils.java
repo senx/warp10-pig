@@ -1,20 +1,22 @@
 package io.warp10.pig.utils;
 
-import io.warp10.continuum.gts.GTSWrapperHelper;
-import io.warp10.script.WarpScriptException;
 import io.warp10.continuum.gts.GTSDecoder;
 import io.warp10.continuum.gts.GTSSplitter;
+import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
-import io.warp10.continuum.store.thrift.data.Metadata;
-import com.google.common.base.Charsets;
-import org.apache.pig.data.*;
-import org.apache.thrift.TDeserializer;
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
+import io.warp10.script.WarpScriptException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+
+import com.google.common.base.Charsets;
 
 public class WarpScriptUtils {
 
@@ -55,7 +57,7 @@ public class WarpScriptUtils {
         scriptSB.append(line).append("\n");
       }
     } catch (IOException ioe) {
-      throw new IOException("Warpscript file should not exist", ioe);
+      throw new IOException("Warpscript file not found.", ioe);
     } finally {
       if (null != fis) {
         fis.close();
