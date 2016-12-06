@@ -75,11 +75,17 @@ public class PigUtils {
         DataBag bag = DefaultBagFactory.getInstance().newDefaultBag();
         
         for (Object o: (Collection<Object>) warpscriptObj) {
-          Tuple t = TupleFactory.getInstance().newTuple(1);
           
-          t.set(0, toPig(o));
+          Object pigo = toPig(o);
           
-          bag.add(t);
+          if (pigo instanceof Tuple) {
+            bag.add((Tuple) pigo);
+          } else {
+            Tuple t = TupleFactory.getInstance().newTuple(1);
+            t.set(0, pigo);
+            bag.add(t);
+          }
+          
         }
         
         objCasted = bag;
