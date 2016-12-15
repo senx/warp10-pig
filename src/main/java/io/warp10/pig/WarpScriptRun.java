@@ -5,12 +5,10 @@ import io.warp10.crypto.SipHashInline;
 import io.warp10.pig.utils.PigUtils;
 import io.warp10.pig.utils.WarpScriptUtils;
 import io.warp10.script.WarpScriptExecutor;
-import io.warp10.script.WarpScriptStack;
-import io.warp10.script.WarpScriptStopException;
 import io.warp10.script.WarpScriptExecutor.StackSemantics;
+import io.warp10.script.WarpScriptStopException;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,12 +16,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.pig.EvalFunc;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigMapReduce;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
-import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.tools.pigstats.PigStatusReporter;
 
 /**
@@ -182,7 +178,7 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
             String filePath = mc2.substring(1);
             String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
 
-            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance());
+            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance());            
           } else {
 
             //
