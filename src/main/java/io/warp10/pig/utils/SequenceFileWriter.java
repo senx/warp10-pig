@@ -37,8 +37,8 @@ public class SequenceFileWriter extends StoreFunc {
   public SequenceFileWriter(String... args)
       throws IOException {
     try {
-      this.keyClass = (Class<? extends WritableComparable>) Class.forName(args[0]);
-      this.valueClass = (Class<? extends Writable>) Class.forName(args[1]);
+      this.keyClass = NullWritable.class;
+      this.valueClass = (Class<? extends Writable>) Class.forName(args[0]);
     }
     catch (Exception e) {
       throw new IOException("Invalid key/value type", e);
@@ -63,7 +63,7 @@ public class SequenceFileWriter extends StoreFunc {
 
         final SequenceFile.Writer out = SequenceFile.createWriter(conf,
             SequenceFile.Writer.compression(SequenceFile.CompressionType.BLOCK, new DefaultCodec()),
-            SequenceFile.Writer.keyClass(BytesWritable.class),
+            SequenceFile.Writer.keyClass(NullWritable.class),
             SequenceFile.Writer.valueClass(BytesWritable.class),
             SequenceFile.Writer.file(file));
 
@@ -117,24 +117,9 @@ public class SequenceFileWriter extends StoreFunc {
 
       DataByteArray data = (DataByteArray) input.get(0);
 
-      //
-      // Deserialize
-      //
+      writer.write(NullWritable.get(), new BytesWritable(data.get()));
 
-      GTSWrapper wrapper = new GTSWrapper();
-
-      TDeserializer deser = new TDeserializer(new TCompactProtocol.Factory());
-
-      try {
-        deser.deserialize(wrapper, data.get());
-      } catch (TException te) {
-        throw new IOException(te);
-      }
-
-      List<DataByteArray> kv = GTSWrapperPigHelper.gtsWrapperToSF(wrapper);
-
-      writer.write(new BytesWritable(kv.get(0).get()), new BytesWritable(kv.get(1).get()));
-    } catch (InterruptedException e) {
+    } catch (Exception e) {
       throw new IOException(e);
     }
 
