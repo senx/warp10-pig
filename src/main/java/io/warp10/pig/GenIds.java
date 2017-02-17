@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class GenIds extends EvalFunc<Tuple> {
 
-  public GenIds(String... args) { }
+  public GenIds() { }
 
   /**
    *
@@ -84,11 +84,11 @@ public class GenIds extends EvalFunc<Tuple> {
 
     List<Schema.FieldSchema> fields = new ArrayList<Schema.FieldSchema>();
     fields.add(new Schema.FieldSchema("classId", DataType.LONG));
-    fields.add(new Schema.FieldSchema("lastTick", DataType.LONG));
+    fields.add(new Schema.FieldSchema("labelsId", DataType.LONG));
 
     Schema tupleSchema = new Schema(fields);
 
-    Schema.FieldSchema outputTuple = new Schema.FieldSchema("ticks", DataType.TUPLE);
+    Schema.FieldSchema outputTuple = new Schema.FieldSchema("gtsIds", DataType.TUPLE);
 
     outputTuple.schema = tupleSchema;
 

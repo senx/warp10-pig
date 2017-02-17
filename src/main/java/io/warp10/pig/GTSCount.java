@@ -17,15 +17,14 @@ import java.io.IOException;
 
 /**
  * Return the number of datapoints in the GTS (tests)
- * key : GTSWraper without ticks
- * value : GeoTimeSerie (with ticks)
+ * bytearray : GTSWraper
  **/
 public class GTSCount extends EvalFunc<Long> {
 
   public GTSCount() { }
 
   /**
-   * Input : 2 bytearray = key (GTSWrapper) and value (GTS)
+   * Input : Tuple with 1 bytearray = GTSWrapper
    *
    * @param input
    * @return
@@ -69,7 +68,7 @@ public class GTSCount extends EvalFunc<Long> {
 
   @Override
   public Schema outputSchema(Schema input) {
-    Schema.FieldSchema fieldSchema = new Schema.FieldSchema("nbTicks", DataType.INTEGER);
+    Schema.FieldSchema fieldSchema = new Schema.FieldSchema("nbTicks", DataType.LONG);
 
     return new Schema(fieldSchema);
 
