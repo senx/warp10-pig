@@ -16,6 +16,3 @@ DESCRIBE gtsWrappers;
 gtsUpload = FOREACH gtsWrappers GENERATE GTSUpload(encoded);
 
 DUMP gtsUpload;
-
---pointsPerGts = FOREACH gtsWrappers GENERATE FLATTEN(GTSCount(encoded)) AS (nb: long);
---DESCRIBE pointsPerGts;

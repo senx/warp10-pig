@@ -110,14 +110,14 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
 
   /**
    * Read one SF record
-   * @param input - Tuple : key (bytearray), value (optional)
+   * @param input - Tuple : GTSWrapper(bytearray)
    * @return DataBag
    * @throws IOException
    */
   public DataBag exec(Tuple input) throws IOException {
 
     if (null == input || input.size() < 1) {
-      throw new IOException("Invalid input, tuples should have at least 1 element : key(GTSWrapper), value (optional).");
+      throw new IOException("Invalid input, tuples should have 1 element : value (GTSWrapper).");
     }
 
     TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
@@ -133,39 +133,15 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
 
 
     //
-    // First field (key) : GTSWrapper instance
+    // GTSWrapper instance
     //
 
-    GTSWrapper gtsWrapperPartial = new GTSWrapper();
+    GTSWrapper gtsWrapper = new GTSWrapper();
 
     try {
-      deserializer.deserialize(gtsWrapperPartial, ((DataByteArray) input.get(0)).get());
+      deserializer.deserialize(gtsWrapper, ((DataByteArray) input.get(1)).get());
     } catch (TException te) {
       throw new IOException(te);
-    }
-
-    //
-    // Last field = value (Optional) : GTS encoded (has to be put in the previous GTSWrapper)
-    //
-
-    //
-    // FIXME: not really performant - avoid this test for each call to exec !
-    //
-
-    if (!"light".equalsIgnoreCase(this.mode)) {
-      if (2 == input.size()) {
-        DataByteArray gtsEncodedData = (DataByteArray) input.get(1);
-        gtsWrapperPartial.setEncoded(gtsEncodedData.get());
-
-      } else {
-        System.err.println("2 parameters (key and value) are required");
-        return null;
-      }
-    } else {
-      //
-      // Light mode : we ignore ticks
-      //
-      gtsWrapperPartial.setEncoded(new byte[0]);
     }
 
     //
@@ -179,15 +155,15 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
     // These new classId and labelsId will help us to perform this join
     //
 
-    String className = gtsWrapperPartial.getMetadata().getName();
+    String className = gtsWrapper.getMetadata().getName();
 
-    Map labels = gtsWrapperPartial.getMetadata().getLabels();
+    Map labels = gtsWrapper.getMetadata().getLabels();
 
     //
     // Register these ids as labels in the current GTS
     //
 
-    Metadata metadata = gtsWrapperPartial.getMetadata();
+    Metadata metadata = gtsWrapper.getMetadata();
 
     long classIdForJoin = Long.MAX_VALUE;
     long labelsIdForJoin = Long.MAX_VALUE;
@@ -210,7 +186,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
         if (null != labels) {
           labelsIdForJoin = GTSHelper
               .labelsId(keyStore.decodeKey(classLabelsKey),
-                  gtsWrapperPartial.getMetadata().getLabels());
+                  gtsWrapper.getMetadata().getLabels());
           metadata
               .putToLabels(labelsIdForJoinName,
                   String.valueOf(labelsIdForJoin));
@@ -229,7 +205,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
     //String gtsId = java.util.UUID.randomUUID().toString();
     //metadata.putToLabels(gtsIdLabelName, gtsId);
 
-    gtsWrapperPartial.setMetadata(metadata);
+    gtsWrapper.setMetadata(metadata);
 
     if ("chunk".equalsIgnoreCase(this.mode)) {
 
@@ -238,7 +214,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
       //
 
       List<GTSWrapper> chunks = WarpScriptUtils
-          .chunk(gtsWrapperPartial, clipFrom, clipTo, chunkwidth);
+          .chunk(gtsWrapper, clipFrom, clipTo, chunkwidth);
 
       //System.out.println("nb chunks : " + chunks.size());
 
@@ -251,13 +227,13 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
         String chunkId = chunk.getMetadata().getLabels()
             .get(WarpScriptUtils.chunkIdLabelName);
         Metadata metadataChunk = new Metadata(
-            gtsWrapperPartial.getMetadata());
+            gtsWrapper.getMetadata());
         metadataChunk.putToLabels(WarpScriptUtils.chunkIdLabelName, chunkId);
 
         chunk.setMetadata(metadataChunk);
 
-        if (gtsWrapperPartial.isSetKey()) {
-          chunk.setKey(gtsWrapperPartial.getKey());
+        if (gtsWrapper.isSetKey()) {
+          chunk.setKey(gtsWrapper.getKey());
         }
 
         //
@@ -320,7 +296,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
 
       byte[] data = null;
       try {
-        data = serializer.serialize(gtsWrapperPartial);
+        data = serializer.serialize(gtsWrapper);
       } catch (TException te) {
         throw new IOException(te);
       }
@@ -329,7 +305,7 @@ public class GTSWrapperFromSF extends EvalFunc<DataBag> {
 
       resultTuple.set(0, className);
 
-      resultTuple.set(1, gtsWrapperPartial.getMetadata().getLabels());
+      resultTuple.set(1, gtsWrapper.getMetadata().getLabels());
 
       if (genIds) {
 
