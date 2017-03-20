@@ -170,7 +170,6 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
 
         synchronized(executors) {
           if (mc2.startsWith("@")) {
-
             //
             // delete the @ character
             //
@@ -178,7 +177,17 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
             String filePath = mc2.substring(1);
             String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
 
-            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance());            
+            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance()); 
+          } else if (mc2.startsWith("%")) {
+            //
+            // delete the % character
+            //
+
+            String filePath = mc2.substring(1);
+            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
+
+            // Don't wrap the WarpScript code in a macro
+            executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance(), false);             
           } else {
 
             //
