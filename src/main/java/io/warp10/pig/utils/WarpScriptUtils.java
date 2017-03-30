@@ -72,7 +72,7 @@ public class WarpScriptUtils {
    * Return a Tuple that represents the stack
    *
    * @param stack (List)
-   * @return DataBag - stack: (obj1, obj2, ...)
+   * @return tuple - stack: (top, level1, ...)
    *
    */
   public static Tuple stackToPig(List<Object> stack) throws IOException {
@@ -90,12 +90,7 @@ public class WarpScriptUtils {
 
       Object pigObj = PigUtils.toPig(stack.get(level));
 
-      //
-      // level
-      //
-
       stackAstuple.set(level, pigObj);
-
     }
 
     return stackAstuple;
