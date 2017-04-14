@@ -15,6 +15,7 @@ public class PigWarpScriptExtension extends WarpScriptExtension {
     functions.put("->PIG", new TOPIG("->PIG"));
     functions.put("PIG->", new PIGTO("PIG->"));
     functions.put("NEWBAG", new NEWBAG("NEWBAG"));
+    functions.put("+", new ADD("+"));
   }
   
   @Override
