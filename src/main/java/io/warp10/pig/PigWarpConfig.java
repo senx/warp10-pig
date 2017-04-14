@@ -1,6 +1,7 @@
 package io.warp10.pig;
 
 import io.warp10.WarpConfig;
+import io.warp10.script.WarpScriptLib;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,8 +40,14 @@ public class PigWarpConfig {
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-      }
+      }      
     }
+    
+    //
+    // Register out Pig extension
+    //
+    
+    WarpScriptLib.register(new PigWarpScriptExtension());
   }
   
   public static boolean ensureConfig() {
