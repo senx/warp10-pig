@@ -36,9 +36,7 @@ public class GTSUpload extends EvalFunc<Long> {
    */
   private RateLimiter rateLimiter = null;
 
-  public GTSUpload() {
-    this(null);
-  }
+  public GTSUpload() { }
   
   public GTSUpload(String... args) {
     this.params = args[0];
