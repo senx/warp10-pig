@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.zip.GZIPOutputStream;
 
+import com.google.common.util.concurrent.RateLimiter;
 import io.warp10.continuum.gts.GTSWrapperHelper;
 import io.warp10.continuum.store.Constants;
 import org.apache.pig.EvalFunc;
@@ -28,12 +29,30 @@ import io.warp10.continuum.store.thrift.data.Metadata;
  */
 public class GTSUpload extends EvalFunc<Long> {
 
+  /**
+   * Default limit (none) - datapoints/second
+   */
+  public static double DEFAULT_RATE_LIMIT = -1.0D;
+
   private String params = null;
-  
-  public GTSUpload() {  }
+
+  /**
+   * RateLimiter (default: no limit)
+   */
+  private RateLimiter rateLimiter = null;
+
+  public GTSUpload() {
+    this(null);
+  }
   
   public GTSUpload(String... args) {
+
     this.params = args[0];
+
+    this.rateLimiter = RateLimiter.create(DEFAULT_RATE_LIMIT);
+
+    System.out.println("RateLimiter - limit: " + String.valueOf(rateLimiter.getRate()));
+
   }
 
   /**
@@ -66,7 +85,7 @@ public class GTSUpload extends EvalFunc<Long> {
       params = input.get(0).toString();
     }
 
-    if (input.size() > 2) {
+    if ((0 == input.size()) || (input.size() > 2)) {
       throw new IOException("Invalid input, should be a tuple containing a GTS or parameters and GTS.");
     }
     
@@ -90,6 +109,7 @@ public class GTSUpload extends EvalFunc<Long> {
     String token = null;
     boolean gzip = false;
     String header = null;
+    String rateLimit = null;
     
     while (i < tokens.length) {
       if ("-t".equals(tokens[i])) {
@@ -106,6 +126,13 @@ public class GTSUpload extends EvalFunc<Long> {
       if ("-H".equals(tokens[i])) {
         i++;
         header = tokens[i];
+      }
+      /**
+       * rate limit (double): datapoints/second - default: -1.0D
+       */
+      if ("-l".equals(tokens[i])) {
+        i++;
+        this.rateLimiter = RateLimiter.create(Double.valueOf(tokens[i]));
       }
       i++;
     }
@@ -158,6 +185,11 @@ public class GTSUpload extends EvalFunc<Long> {
 
         while (decoder.next()) {
           reporter.progress();
+
+          double waitValue = rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
+          if (waitValue > 1.0D) {
+            System.err.print("GTSUpload - wait duration(in seconds): " + String.valueOf(waitValue));
+          }
 
           if (!first) {
             pw.print("=");
