@@ -29,15 +29,10 @@ import io.warp10.continuum.store.thrift.data.Metadata;
  */
 public class GTSUpload extends EvalFunc<Long> {
 
-  /**
-   * Default limit (none) - datapoints/second
-   */
-  public static double DEFAULT_RATE_LIMIT = -1.0D;
-
   private String params = null;
 
   /**
-   * RateLimiter (default: no limit)
+   * RateLimiter
    */
   private RateLimiter rateLimiter = null;
 
@@ -46,13 +41,7 @@ public class GTSUpload extends EvalFunc<Long> {
   }
   
   public GTSUpload(String... args) {
-
     this.params = args[0];
-
-    this.rateLimiter = RateLimiter.create(DEFAULT_RATE_LIMIT);
-
-    System.out.println("RateLimiter - limit: " + String.valueOf(rateLimiter.getRate()));
-
   }
 
   /**
@@ -128,7 +117,7 @@ public class GTSUpload extends EvalFunc<Long> {
         header = tokens[i];
       }
       /**
-       * rate limit (double): datapoints/second - default: -1.0D
+       * rate limit (double): datapoints/second
        */
       if ("-l".equals(tokens[i])) {
         i++;
@@ -186,9 +175,8 @@ public class GTSUpload extends EvalFunc<Long> {
         while (decoder.next()) {
           reporter.progress();
 
-          double waitValue = rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
-          if (waitValue > 1.0D) {
-            System.err.print("GTSUpload - wait duration(in seconds): " + String.valueOf(waitValue));
+          if (null != this.rateLimiter) {
+            rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
           }
 
           if (!first) {
