@@ -31,11 +31,6 @@ public class GTSUpload extends EvalFunc<Long> {
 
   private String params = null;
 
-  /**
-   * RateLimiter
-   */
-  private RateLimiter rateLimiter = null;
-
   public GTSUpload() { }
   
   public GTSUpload(String... args) {
@@ -51,6 +46,12 @@ public class GTSUpload extends EvalFunc<Long> {
    */
   @Override
   public Long exec(Tuple input) throws IOException {
+
+    //
+    // Limit data upload
+    //
+
+    RateLimiter rateLimiter = null;
 
     //
     // GTSWrapper
@@ -119,7 +120,7 @@ public class GTSUpload extends EvalFunc<Long> {
        */
       if ("-l".equals(tokens[i])) {
         i++;
-        this.rateLimiter = RateLimiter.create(Double.valueOf(tokens[i]));
+        rateLimiter = RateLimiter.create(Double.valueOf(tokens[i]));
       }
       i++;
     }
@@ -173,7 +174,7 @@ public class GTSUpload extends EvalFunc<Long> {
         while (decoder.next()) {
           reporter.progress();
 
-          if (null != this.rateLimiter) {
+          if (null != rateLimiter) {
             rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
           }
 
