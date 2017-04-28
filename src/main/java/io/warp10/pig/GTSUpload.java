@@ -29,6 +29,11 @@ import io.warp10.continuum.store.thrift.data.Metadata;
  */
 public class GTSUpload extends EvalFunc<Long> {
 
+  //
+  // Limit data upload
+  //
+  private RateLimiter rateLimiter = null;
+
   private String params = null;
 
   public GTSUpload() { }
@@ -46,12 +51,6 @@ public class GTSUpload extends EvalFunc<Long> {
    */
   @Override
   public Long exec(Tuple input) throws IOException {
-
-    //
-    // Limit data upload
-    //
-
-    RateLimiter rateLimiter = null;
 
     //
     // GTSWrapper
@@ -120,7 +119,12 @@ public class GTSUpload extends EvalFunc<Long> {
        */
       if ("-l".equals(tokens[i])) {
         i++;
-        rateLimiter = RateLimiter.create(Double.valueOf(tokens[i]));
+        /**
+         * Ignore it if RateLimiter has been set
+         */
+        if (null == this.rateLimiter) {
+          this.rateLimiter = RateLimiter.create(Double.valueOf(tokens[i]));
+        }
       }
       i++;
     }
@@ -175,7 +179,7 @@ public class GTSUpload extends EvalFunc<Long> {
           reporter.progress();
 
           if (null != rateLimiter) {
-            rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
+            this.rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
           }
 
           if (!first) {
