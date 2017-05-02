@@ -179,7 +179,7 @@ public class GTSUpload extends EvalFunc<Long> {
           reporter.progress();
 
           if (null != rateLimiter) {
-            this.rateLimiter.acquire(Math.toIntExact(decoder.getCount()));
+            this.rateLimiter.acquire(1);
           }
 
           if (!first) {
