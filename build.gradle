@@ -1,3 +1,27 @@
+buildscript {
+  repositories {
+    flatDir name:'ExternalJars', dirs:'./lib'
+    mavenCentral()
+    jcenter()
+    maven {
+      url "http://maven.twttr.com"
+    }
+    maven {
+      url "http://127.0.0.1:40080/m2"
+    }
+  }
+
+  dependencies {
+    classpath files('./build/classes/main')
+    classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '4.9'
+    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
+  }
+}
+
+plugins {
+  id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
 apply plugin: 'java';
 apply plugin: 'eclipse';
 apply plugin: 'idea';
@@ -84,26 +108,6 @@ sourceSets {
   }
 }
 
-buildscript {
-  repositories {
-    flatDir name:'ExternalJars', dirs:'./lib'
-    mavenCentral()
-    jcenter()
-    maven {
-      url "http://maven.twttr.com"
-    }
-    maven {
-      url "http://127.0.0.1:40080/m2"
-    }
-  }
-
-  dependencies {
-    classpath files('./build/classes/main')
-    classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '4.9'
-    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
-  }
-}
-
 //
 // Custom tasks
 // MUST appear before task dependencies can be defined
@@ -127,12 +131,15 @@ task(groovysh, dependsOn: 'compileJava', type: JavaExec) {
 dependencies {
   testCompile group: 'junit', name: 'junit', version: '4.12'
 
+  // UTILS
+  compile group: 'com.google.guava', name: 'guava', version: '15.0'
+
   //
   // Compile task dependency
   //
 
-  compile group: 'org.apache.pig', name: 'pig', version: '0.16.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.2.7-rc1'
+  compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.2.9-rc3'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
@@ -147,6 +154,24 @@ dependencies {
   warp10Pig 'org.apache.maven.wagon:wagon-ssh-external:2.8'
 
 }
+
+//
+// Force versions
+//
+configurations.all {
+  resolutionStrategy {
+    // fail eagerly on version conflict (includes transitive dependencies)
+    // e.g. multiple different versions of the same dependency (group and name are equal)
+    //failOnVersionConflict()
+
+    // force certain versions of dependencies (including transitive)
+    //  *append new forced modules:
+    // This is needed to force Guava to 15.0 and not 17.0 as Renjin pulls
+    // HBase does not work with > 15.0
+    force 'com.google.guava:guava:15.0'
+  }
+}
+
 
 //
 // Eclipse classpath sanitization
@@ -228,6 +253,17 @@ def boolean isDepRequired(String currentDep ) {
   return requiredLibs.any { currentDep.equalsIgnoreCase(it) }
 }
 
+shadowJar {
+  zip64 = true
+  manifest {
+    attributes("Implementation-Title": "Warp10-Pig")
+    attributes("Implementation-Version": version)
+  }
+
+  relocate 'com.google', 'io.warp10.pig.com.google'
+  classifier = null
+}
+
 task pack(type: Jar, dependsOn: jar) {
   zip64 = true
 
@@ -285,7 +321,10 @@ uploadArchives {
 publishing {
   publications {
     warp10Pig(MavenPublication) {
-      artifact file("${buildDir}/libs/warp10-pig-" + version + ".jar")
+      artifact shadowJar {
+        extension = 'jar'
+      }
+      //artifact file("${buildDir}/libs/warp10-pig-" + version + ".jar")
       groupId 'io.warp10'
       artifactId archivesBaseName
       version version
@@ -315,8 +354,13 @@ bintray {
     }
 }
 
+artifacts {
+  archives shadowJar
+}
+
 //
 // Tasks dependencies
 //
-uploadArchives.dependsOn pack
-bintrayUpload.dependsOn pack
+shadowJar.dependsOn pack
+uploadArchives.dependsOn shadowJar
+bintrayUpload.dependsOn shadowJar
