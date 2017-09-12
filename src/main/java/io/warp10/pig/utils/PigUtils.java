@@ -1,12 +1,14 @@
 package io.warp10.pig.utils;
 
-import io.warp10.continuum.gts.GTSWrapperHelper;
-import io.warp10.continuum.gts.GeoTimeSerie;
+import com.google.common.base.Charsets;
+import io.warp10.continuum.gts.*;
 import io.warp10.continuum.store.thrift.data.GTSWrapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
 
+import io.warp10.crypto.OrderPreservingBase64;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.data.DataBag;
@@ -227,5 +230,50 @@ public class PigUtils {
     DataByteArray wrapperEncoded =  new DataByteArray(wrapperSerialized);
 
     return wrapperEncoded;
+  }
+
+  /**
+   * Convert a GTSEncoder wrapped as String to GTSWrapper encoded as bytearray (DataByteArray)
+   *
+   * @param wrappedEncoderStr
+   * @return DataByteArray
+   * @throws  java.io.IOException
+   */
+  public static DataByteArray gtsEncoderToGTSWrapper(String wrappedEncoderStr) throws  IOException {
+    DataByteArray encoded = null;
+
+    try {
+
+      byte[] bytes = OrderPreservingBase64.decode(wrappedEncoderStr.getBytes(Charsets.US_ASCII));
+
+      StringBuffer sb = new StringBuffer(wrappedEncoderStr);
+
+      // Add single quotes around value if it does not contain any
+
+      int lastwsp = wrappedEncoderStr.lastIndexOf(" ");
+
+      sb.insert(lastwsp + 1, "'");
+      sb.append("'");
+
+      GTSEncoder encoder = GTSHelper.parse(null, sb.toString());
+
+      GTSWrapper gtsWrapper = GTSWrapperHelper.fromGTSEncoderToGTSWrapper(encoder, true);
+
+      //
+      // Encode GTSEncoder
+      //
+
+      TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
+      byte[] decoderSerialized = new byte[0];
+      try {
+        decoderSerialized = serializer.serialize(gtsWrapper);
+      } catch (TException te) {
+        throw new IOException(te);
+      }
+
+    } catch (ParseException pe) {
+      throw new IOException(pe);
+    }
+    return encoded;
   }
 }
