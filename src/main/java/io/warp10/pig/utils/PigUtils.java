@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -243,9 +244,6 @@ public class PigUtils {
     DataByteArray encoded = null;
 
     try {
-
-      byte[] bytes = OrderPreservingBase64.decode(wrappedEncoderStr.getBytes(Charsets.US_ASCII));
-
       StringBuffer sb = new StringBuffer(wrappedEncoderStr);
 
       // Add single quotes around value if it does not contain any
@@ -257,18 +255,32 @@ public class PigUtils {
 
       GTSEncoder encoder = GTSHelper.parse(null, sb.toString());
 
-      GTSWrapper gtsWrapper = GTSWrapperHelper.fromGTSEncoderToGTSWrapper(encoder, true);
+      GTSDecoder decoder = encoder.getDecoder(true);
 
-      //
-      // Encode GTSEncoder
-      //
+      while(decoder.next()) {
+        long ts = decoder.getTimestamp();
+        String value = decoder.getValue().toString();
 
-      TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
-      byte[] decoderSerialized = new byte[0];
-      try {
-        decoderSerialized = serializer.serialize(gtsWrapper);
-      } catch (TException te) {
-        throw new IOException(te);
+        byte[] bytes = OrderPreservingBase64.decode(value.getBytes(Charsets.UTF_8));
+        decoder = new GTSDecoder(ts, ByteBuffer.wrap(bytes));
+        decoder.setMetadata(encoder.getMetadata());
+
+        break;
+      }
+
+      if (decoder.next()) {
+        GTSWrapper gtsWrapper = GTSWrapperHelper.fromGTSEncoderToGTSWrapper(decoder.getEncoder(true), true);
+
+        //
+        // Encode GTSEncoder
+        //
+
+        TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
+        try {
+          encoded = new DataByteArray(serializer.serialize(gtsWrapper));
+        } catch (TException te) {
+          throw new IOException(te);
+        }
       }
 
     } catch (ParseException pe) {
