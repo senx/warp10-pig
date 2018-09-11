@@ -16,7 +16,7 @@ public class PIGTO extends NamedWarpScriptFunction implements WarpScriptStackFun
   public Object apply(WarpScriptStack stack) throws WarpScriptException {
     Object top = stack.pop();
     
-    stack.push(PigUtils.fromPig(top));
+    stack.push(PigUtils.fromPig(top, true));
     
     return stack;
   }  
