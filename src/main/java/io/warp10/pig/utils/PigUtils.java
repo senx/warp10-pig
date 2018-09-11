@@ -113,6 +113,12 @@ public class PigUtils {
         objCasted = warpscriptObj;
       } else if (warpscriptObj instanceof DateTime) {
         objCasted = warpscriptObj;
+      } else if (warpscriptObj instanceof DataBag) {
+        objCasted = warpscriptObj;
+      } else if (warpscriptObj instanceof Tuple) {
+        objCasted = warpscriptObj;
+      } else if (warpscriptObj instanceof DataByteArray) {
+        objCasted = warpscriptObj;
       } else {
         objCasted = warpscriptObj.toString();
       }
@@ -121,7 +127,7 @@ public class PigUtils {
     return objCasted;
   }
 
-  public static Object fromPig(Object pigObj) {
+  public static Object fromPig(Object pigObj, boolean convbags) {
     if (DataType.isAtomic(pigObj)) {
       // bytearray, bigchararray, chararray, integer, long, float, double, boolean
       
@@ -144,22 +150,26 @@ public class PigUtils {
       switch(type) {
         case DataType.NULL:
           return null;
-          
         case DataType.BAG:
-          //
-          // Bags are converted to vectors
-          //
           
-          Iterator<Tuple> iter = ((DataBag) pigObj).iterator();
-          
-          Vector<Object> vector = new Vector<Object>();
-          
-          while (iter.hasNext()) {
-            Tuple tuple = iter.next();
-            vector.add(fromPig(tuple));
-          }
+          if (convbags) {
+            //
+            // Bags are converted to vectors
+            //
+            
+            Iterator<Tuple> iter = ((DataBag) pigObj).iterator();
+            
+            Vector<Object> vector = new Vector<Object>();
+            
+            while (iter.hasNext()) {
+              Tuple tuple = iter.next();
+              vector.add(fromPig(tuple, true));
+            }
 
-          return vector;
+            return vector;            
+          } else {
+            return pigObj;
+          }
           
         case DataType.TUPLE:
           //
@@ -172,7 +182,7 @@ public class PigUtils {
               
           for (int i = 0; i < tuple.size(); i++) {
             try {
-              list.add(fromPig(tuple.get(i)));
+              list.add(fromPig(tuple.get(i), true));
             } catch (ExecException ee) {
               throw new RuntimeException(ee);
             }
@@ -190,7 +200,7 @@ public class PigUtils {
           Map<String,Object> map = new HashMap<String,Object>();
           
           for (Entry<String,Object> entry: pigMap.entrySet()) {
-            map.put(entry.getKey(), fromPig(entry.getValue()));
+            map.put(entry.getKey(), fromPig(entry.getValue(), true));
           }
           
           return map;
