@@ -70,6 +70,8 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
 
   private final StackSemantics semantics;
   
+  private boolean convbags = true;
+  
   /**
    * For keys above 1024 characters, we'll use the hash instead
    */
@@ -91,21 +93,26 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
     this(StackSemantics.PERTHREAD.toString());
   }
   
-  public WarpScriptRun(String... args) {        
-    if (0 == args.length) {
-      semantics = StackSemantics.PERTHREAD;
-    } else {
-      semantics = StackSemantics.valueOf(args[0]);
-    }
-   
-    if (args.length > 1) {
-      for (int i = 1; i < args.length; i++) {
+  public WarpScriptRun(String... args) {
+    StackSemantics stacksem = StackSemantics.PERTHREAD;
+    
+    for (int i = 0; i < args.length; i++) {
+      
+      args[i] = args[i].trim();
+      
+      if (args[i].startsWith("-s")) {
+        stacksem = StackSemantics.valueOf(args[i].substring(2).trim());
+      } else if ("--convbags".equals(args[i])) {
+        convbags = true;
+      } else if ("--noconvbags".equals(args[i])) {
+        convbags = false;
+      } else if (args[i].contains("=")) {
         String[] tokens = args[i].split("=");
-        System.setProperty(tokens[0], tokens[1]);
+        System.setProperty(tokens[0], tokens[1]);        
       }
-    } else {
-      System.setProperty(Configuration.WARP_TIME_UNITS, DEFAULT_TIME_UNITS_PER_MS);
     }
+    
+    semantics = stacksem;
   }
 
   /**
@@ -234,7 +241,7 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
             reporter.progress();
           }
           
-          stackInput.add(PigUtils.fromPig(input.get(level)));
+          stackInput.add(PigUtils.fromPig(input.get(level), convbags));
         }
       }
 
