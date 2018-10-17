@@ -22,8 +22,8 @@ import io.warp10.pig.utils.PigUtils;
 
 public class GenericLoadFunc extends LoadFunc {
   
-  private static final String PIG_INPUT_FORMAT = "pig.input.format";
-  private static final String PIG_CONF_SUFFIX = "pig.conf.suffix";
+  private static final String PIG_GENERICLOAD_INPUTFORMAT = "pig.genericload.inputformat";
+  private static final String PIG_GENERICLOAD_CONF_SUFFIX = "pig.genericload.conf.suffix";
   
   private TupleFactory tfactory = new BinSedesTupleFactory();
   
@@ -43,7 +43,7 @@ public class GenericLoadFunc extends LoadFunc {
     
     Configuration conf = this.job.getConfiguration();
     
-    String confsfx = conf.get(PIG_CONF_SUFFIX + this.suffix, "");
+    String confsfx = conf.get(PIG_GENERICLOAD_CONF_SUFFIX + this.suffix, "");
     
     if (!"".equals(confsfx)) {
       confsfx = "." + confsfx;
@@ -64,10 +64,10 @@ public class GenericLoadFunc extends LoadFunc {
       }
     }
 
-    String inputFormat = conf.get(PIG_INPUT_FORMAT + this.suffix);
+    String inputFormat = conf.get(PIG_GENERICLOAD_INPUTFORMAT + this.suffix);
         
     if (null == inputFormat) {
-      inputFormat = conf.get(PIG_INPUT_FORMAT);
+      inputFormat = conf.get(PIG_GENERICLOAD_INPUTFORMAT);
     }
     
     try {
