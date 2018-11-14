@@ -99,7 +99,7 @@ repositories {
     url 'https://dl.bintray.com/hbs/maven'
   }
   maven {
-    url 'https://dl.bintray.com/cityzendata/maven'
+    url 'https://dl.bintray.com/senx/maven'
   }
   maven {
     url "http://127.0.0.1:40080/m2"
@@ -155,7 +155,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.2.24'
+  compile group: 'io.warp10', name: 'warpscript', version: '1.2.28'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
@@ -361,7 +361,7 @@ bintray {
       repo = 'maven'
       name = 'warp10-pig'
       licenses = ['Apache-2.0']
-      vcsUrl = 'https://github.com/cityzendata/warp10-pig.git'
+      vcsUrl = 'https://github.com/senx/warp10-pig.git'
       version {
         name = getVersionName()
         released  = new Date()
