@@ -118,8 +118,10 @@ public class PigUtils {
           tuple.set(i, toPig(elt));
         }
         objCasted = tuple;
+      } else if (warpscriptObj instanceof GTSEncoder) {
+        objCasted = encodeWrapper(GTSWrapperHelper.fromGTSEncoderToGTSWrapper((GTSEncoder) warpscriptObj, true));
       } else if (warpscriptObj instanceof GeoTimeSerie) {
-        objCasted = geoTimeSerietoGTSWrapper((GeoTimeSerie) warpscriptObj);
+        objCasted = encodeWrapper(GTSWrapperHelper.fromGTSToGTSWrapper((GeoTimeSerie) warpscriptObj, true));
       } else if (warpscriptObj instanceof byte[]) {
         objCasted = new DataByteArray((byte[]) warpscriptObj);
       } else if (warpscriptObj instanceof BigInteger) {
@@ -231,17 +233,7 @@ public class PigUtils {
     }
   }
   
-  /**
-   * Convert GeoTimeSerie to GTSWrapper and return this GTSWrapper encoded
-   *
-   * @param gts
-   * @return DataByteArray
-   * @throws java.io.IOException
-   */
-  protected static DataByteArray geoTimeSerietoGTSWrapper(GeoTimeSerie gts) throws IOException {
-
-    GTSWrapper wrapper = GTSWrapperHelper.fromGTSToGTSWrapper(gts, true);
-
+  protected static DataByteArray encodeWrapper(GTSWrapper wrapper) throws IOException {
     //
     // Encode GTSWrapper
     //
@@ -256,61 +248,5 @@ public class PigUtils {
     DataByteArray wrapperEncoded =  new DataByteArray(wrapperSerialized);
 
     return wrapperEncoded;
-  }
-
-  /**
-   * Convert a GTSEncoder wrapped as String to GTSWrapper encoded as bytearray (DataByteArray)
-   *
-   * @param wrappedEncoderStr
-   * @return DataByteArray
-   * @throws  java.io.IOException
-   */
-  public static DataByteArray gtsEncoderToGTSWrapper(String wrappedEncoderStr) throws  IOException {
-    DataByteArray encoded = null;
-
-    try {
-      StringBuffer sb = new StringBuffer(wrappedEncoderStr);
-
-      // Add single quotes around value if it does not contain any
-
-      int lastwsp = wrappedEncoderStr.lastIndexOf(" ");
-
-      sb.insert(lastwsp + 1, "'");
-      sb.append("'");
-
-      GTSEncoder encoder = GTSHelper.parse(null, sb.toString());
-
-      GTSDecoder decoder = encoder.getDecoder(true);
-
-      while(decoder.next()) {
-        long ts = decoder.getTimestamp();
-        String value = decoder.getValue().toString();
-
-        byte[] bytes = OrderPreservingBase64.decode(value.getBytes(Charsets.UTF_8));
-        decoder = new GTSDecoder(ts, ByteBuffer.wrap(bytes));
-        decoder.setMetadata(encoder.getMetadata());
-
-        break;
-      }
-
-      if (decoder.next()) {
-        GTSWrapper gtsWrapper = GTSWrapperHelper.fromGTSEncoderToGTSWrapper(decoder.getEncoder(true), true);
-
-        //
-        // Encode GTSEncoder
-        //
-
-        TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
-        try {
-          encoded = new DataByteArray(serializer.serialize(gtsWrapper));
-        } catch (TException te) {
-          throw new IOException(te);
-        }
-      }
-
-    } catch (ParseException pe) {
-      throw new IOException(pe);
-    }
-    return encoded;
   }
 }
