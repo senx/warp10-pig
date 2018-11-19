@@ -86,23 +86,10 @@ repositories {
   }
   mavenCentral()
   maven {
-    url "http://maven.twttr.com"
-  }
-  // bedatadriven - http://www.renjin.org/#downloads
-  maven {
-    url "http://nexus.bedatadriven.com/content/groups/public/"
-  }
-  maven {
-    url "http://repo.opengeo.org/"
-  }
-  maven {
     url 'https://dl.bintray.com/hbs/maven'
   }
   maven {
     url 'https://dl.bintray.com/senx/maven'
-  }
-  maven {
-    url "http://127.0.0.1:40080/m2"
   }
 }
 
@@ -155,7 +142,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '1.2.28'
+  compile group: 'io.warp10', name: 'warpscript', version: '2.0.0'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
