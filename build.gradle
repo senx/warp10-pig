@@ -347,6 +347,7 @@ bintray {
     pkg {
       repo = 'maven'
       name = 'warp10-pig'
+      userOrg = 'senx'
       licenses = ['Apache-2.0']
       vcsUrl = 'https://github.com/senx/warp10-pig.git'
       version {
