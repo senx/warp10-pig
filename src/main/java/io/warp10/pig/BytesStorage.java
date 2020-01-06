@@ -26,6 +26,8 @@ import org.apache.pig.StoreFunc;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
 
+import io.warp10.hadoop.BytesOutputFormat;
+
 public class BytesStorage extends StoreFunc {
   
   private RecordWriter writer = null;
