@@ -79,11 +79,7 @@ idea {
 //
 
 repositories {
- 
   jcenter()
-  maven {
-    url 'https://repository.apache.org/content/groups/public'
-  }
   mavenCentral()
   maven {
     url 'https://dl.bintray.com/hbs/maven'
@@ -142,7 +138,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
-  compile group: 'io.warp10', name: 'warpscript', version: '2.0.0'
+  compile 'io.warp10:warpscript:+'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
