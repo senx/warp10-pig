@@ -18,6 +18,7 @@ package io.warp10.pig;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.codehaus.plexus.util.ReflectionUtils;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,6 +27,10 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.GzipCodec;
 
 public class BytesOutputFormat extends FileOutputFormat<BytesWritable,BytesWritable> {
   
@@ -50,9 +55,25 @@ public class BytesOutputFormat extends FileOutputFormat<BytesWritable,BytesWrita
   @Override
   public RecordWriter<BytesWritable, BytesWritable> getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
     String extension = "";
+    boolean isCompressed = getCompressOutput(context);
+    Configuration conf = context.getConfiguration();
+    CompressionCodec codec = null;
+    
+    if (isCompressed) {
+      Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(context, GzipCodec.class);
+      codec = ReflectionUtils.newInstance(codecClass, conf);
+      extension = codec.getDefaultExtension();
+    }
+    
     Path file = getDefaultWorkFile(context, extension);
     FileSystem fs = file.getFileSystem(context.getConfiguration());
     FSDataOutputStream fileOut = fs.create(file, false);
-    return new BytesRecordWriter(fileOut);
+    DataOutputStream out = fileOut;
+    
+    if (isCompressed) {
+      out = new DataOutputStream(codec.createOutputStream(fileOut));
+    }
+    
+    return new BytesRecordWriter(out);
   }
 }
