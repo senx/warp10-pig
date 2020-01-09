@@ -84,11 +84,10 @@ public class GenericLoadFunc extends LoadFunc {
     if (null == inputFormat) {
       inputFormat = conf.get(PIG_GENERICLOAD_INPUTFORMAT);
     }
-    
+
     try {
       Class ifclass = Class.forName(inputFormat);
       InputFormat format = (InputFormat) ifclass.newInstance();
-
       return format;
     } catch (Exception e) {
       throw new IOException(e);
@@ -119,8 +118,16 @@ public class GenericLoadFunc extends LoadFunc {
         return null;
       }
 
-      Object key = WritableUtils.fromWritable((Writable) this.reader.getCurrentKey());
-      Object value = WritableUtils.fromWritable((Writable) this.reader.getCurrentValue());
+      Object key = this.reader.getCurrentKey();
+      Object value = this.reader.getCurrentValue();
+      
+      if (key instanceof Writable) {
+        key = WritableUtils.fromWritable((Writable) key);
+      }
+      
+      if (value instanceof Writable) {
+        value = WritableUtils.fromWritable((Writable) value);
+      }
 
       Tuple t = this.tfactory.newTuple(2);
 
