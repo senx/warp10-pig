@@ -22,6 +22,8 @@ import io.warp10.continuum.store.thrift.data.GTSWrapper;
 import io.warp10.script.WarpScriptException;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,6 +32,7 @@ import java.util.List;
 
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.PigContext;
 
 import com.google.common.base.Charsets;
 
@@ -54,9 +57,18 @@ public class WarpScriptUtils {
     //
     StringBuffer scriptSB = new StringBuffer();
     InputStream fis = null;
+
     try {
 
       fis = WarpScriptUtils.class.getClassLoader().getResourceAsStream(warpscriptName);
+      
+      if (null == fis) {
+        fis = PigContext.getClassLoader().getResourceAsStream(warpscriptName);
+      }
+      
+      if (null == fis) {
+        fis = new FileInputStream(new File(warpscriptName));
+      }
       
       if (null == fis) {
         throw new IOException("Path '" + warpscriptName + "' not found, you may have forgotten to REGISTER your script.");
