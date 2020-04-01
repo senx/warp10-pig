@@ -197,7 +197,7 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
             //
 
             String filePath = mc2.substring(1);
-            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
+            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + "\n" + WarpScriptUtils.parseScript(filePath);
 
             executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance()); 
           } else if (mc2.startsWith("%")) {
@@ -206,7 +206,7 @@ public class WarpScriptRun extends EvalFunc<Tuple> {
             //
 
             String filePath = mc2.substring(1);
-            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + WarpScriptUtils.parseScript(filePath);
+            String mc2FileContent = "'" + filePath + "' '" + WARPSCRIPT_FILE_VARIABLE + "' STORE " + "\n" + WarpScriptUtils.parseScript(filePath);
 
             // Don't wrap the WarpScript code in a macro
             executor = new WarpScriptExecutor(this.semantics, mc2FileContent, null, PigStatusReporter.getInstance(), false);             
