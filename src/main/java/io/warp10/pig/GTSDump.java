@@ -84,7 +84,7 @@ public class GTSDump extends EvalFunc<DataBag> {
     // Metadata as String (native mode only)
     //
     StringBuilder metasb = new StringBuilder();
-    GTSHelper.metadataToString(metasb, metadataChunk.getName(), metadataChunk.getLabels());
+    GTSHelper.metadataToString(metasb, metadataChunk.getName(), metadataChunk.getLabels(), true);
 
     //
     // convert metadata to Map (intermediate mode only)

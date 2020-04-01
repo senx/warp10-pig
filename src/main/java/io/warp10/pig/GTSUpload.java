@@ -280,8 +280,7 @@ public class GTSUpload extends EvalFunc<Long> {
         .fromGTSWrapperToGTSDecoder(gtsWrapper);
 
     StringBuilder metasb = new StringBuilder();
-    GTSHelper.metadataToString(metasb, metadataChunk.getName(),
-        metadataChunk.getLabels());
+    GTSHelper.metadataToString(metasb, metadataChunk.getName(), metadataChunk.getLabels(), false);
 
     boolean first = true;
 
