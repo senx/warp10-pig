@@ -29,13 +29,14 @@ buildscript {
 
   dependencies {
     classpath files('./build/classes/main')
-    classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '4.9'
-    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
+    //classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '4.9'
+    //classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
   }
 }
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '1.2.3'
+  id "com.jfrog.bintray" version "1.8.4"
+  id 'com.github.johnrengelman.shadow' version '4.0.1'
 }
 
 apply plugin: 'java';
