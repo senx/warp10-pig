@@ -53,10 +53,10 @@ targetCompatibility = 1.8
 //
 
 // List of dependencies required by Warp10-pig
-ext.requiredLibs = [ 'warpscript', 'libthrift', 'bcprov-jdk16', 'boon', 'commons-io', 'commons-codec', 'commons-lang', 'commons-lang3', 'commons-math3', 'compiler', 'core', 'curator-x-discovery', 'geoxplib', 'guava', \
-     'hadoop-common', 'hadoop-mapreduce-client-core', 'java-merge-sort', 'jetty-servlets', 'joda-time', 'jruby-complete', 'jtransforms', 'jts', 'junit', 'jython', 'kafka_2.11', \
-     'luaj-jse', 'oss-client', 'renjin-script-engine', 'sensision', 'slf4j-api', 'trove4j' ]
-
+ext.requiredLibs = [ 'warpscript', 'libthrift', 'bcprov-jdk16', 'commons-io', 'commons-codec', 'commons-lang3', 'commons-math3',\
+                     'compiler', 'core', 'curator-x-discovery', 'geoxplib', 'guava', 'hadoop-common', 'hadoop-mapreduce-client-core',\
+                     'java-merge-sort','joda-time', 'jtransforms', 'jts', 'oss-client', 'sensision', 'slf4j-api', 'pyrolite',\
+                     'jts2geojson' ]
 
 //
 // Configurations
@@ -138,7 +138,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
-  compile 'io.warp10:warpscript:+'
+  compile 'io.warp10:warpscript:2.5.0'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
