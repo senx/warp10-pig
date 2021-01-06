@@ -1,5 +1,5 @@
 //
-//   Copyright 2018  SenX S.A.S.
+//   Copyright 2018-2021  SenX S.A.S.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ dependencies {
   //
 
   compile group: 'org.apache.pig', name: 'pig', version: '0.17.0'
-  compile 'io.warp10:warpscript:2.7.0'
+  compile 'io.warp10:warpscript:2.7.2'
 
   //
   // hadoop-client - (depends on) -> hadoop-hdfs, hadoop-common..
